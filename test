@@ -1,0 +1,15 @@
+#!/bin/zsh
+
+assert() {
+       if [[ "$2" != "$3" ]]; then
+       	   echo "Failure: $1\n\tExpected: $3\n\tReceived: $2"
+	   ERR=1
+       fi
+}
+
+
+
+[[ -z "$ERR" ]] && echo "All Tests Pass"
+exit "$ERR"
+
+

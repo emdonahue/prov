@@ -1,0 +1,57 @@
+#!/bin/zsh
+
+CMD="$1"
+[[ $# -ne 0 ]] && shift
+case "$CMD" in
+    add) #[FILE]. Adds a recipe to the Makefile. Scans history to determine the recipe that created FILE. IF FILE omitted, accept recipe from stdin and scan it for ">" to determine FILE. Dependencies are automatically detected based on currently existing filenames mentioned in RECIPE.	
+
+	RECIPE=$(cat)
+	
+	[[ -z "$RECIPE" ]] && echo "No recipe" && exit 1
+	declare -U DEPENDENCIES
+	local IFS=$IFS')(><|'
+	for DEP in ${=RECIPE}
+	do
+	    if [[ -f "$DEP" && "$DEP" != $1 ]]
+	    then
+		DEPENDENCIES+=("$DEP")
+	    fi
+	done
+	sed -i '/^'${1:gs_/_\\/_}':/,${1,/^[^[:space:]]/ {/^'${1:gs_/_\\/_}':/d; /^[[:space:]]/d; /^$/d}}' Makefile
+
+	echo -n "$1:" >> Makefile
+	for DEP in $DEPENDENCIES; do
+	    echo -n " $DEP" >> Makefile
+	done
+	echo '' >> Makefile
+	echo -E "$RECIPE" | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	;;
+
+    delete) #TARGET. Deletes a target from the Makefile.	
+	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" Makefile
+	;;
+    --help|-h|help) #[SUBCOMMAND]. Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	[[ $# -eq 0 ]] && grep -E '\w+\)\s#' "$0"
+	echo 'done'
+	;;
+    set) #TARGET [DEPENDENCY...]. Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
+	if [[ ! -f Makefile ]]; then
+	    echo 'SHELL=zsh -i' >> Makefile
+	    echo '.PHONY: all clean' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
+	    echo 'all: $(TARGETS)' >> Makefile
+	    echo 'clean:' >> Makefile
+            echo '\trm -f $(TARGETS)' >> Makefile
+	fi
+	
+    	"$0" delete "$1"
+	echo -n "$1: " >> Makefile
+	shift
+	echo "$@" >> Makefile
+	cat | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	;;
+    
+    *)
+	"$0" help
+	;;
+esac

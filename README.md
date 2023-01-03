@@ -1,2 +1,2 @@
 # deps
-Automatic Makefile generation and management from command line history
+Automatic Makefile generation and dependency management from command line history

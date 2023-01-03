@@ -47,11 +47,11 @@ case "$CMD" in
             echo '\trm -f $(TARGETS)' >> Makefile
 	fi
 	
-    	"$0" delete "$1"
+    	"$0" unset "$1"
 	echo -n "$1: " >> Makefile
 	shift
 	echo "$@" >> Makefile
-	cat | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
 	;;
     
     unset) #TARGET. Deletes the recipe for building TARGET from the Makefile.

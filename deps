@@ -1,5 +1,7 @@
 #!/bin/zsh
 
+# TODO make capitals in help text print with underline ansi codes
+
 CMD="$1"
 [[ $# -ne 0 ]] && shift
 case "$CMD" in
@@ -27,8 +29,9 @@ case "$CMD" in
 	echo -E "$RECIPE" | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
 	;;
 
-    delete) #TARGET. Deletes a target from the Makefile.	
-	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" Makefile
+    rm) #TARGET. Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
+	"$0" unset "$1"
+	rm -f "$1"
 	;;
     --help|-h|help) #[SUBCOMMAND]. Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	[[ $# -eq 0 ]] && grep -E '\w+\)\s#' "$0"
@@ -49,6 +52,10 @@ case "$CMD" in
 	shift
 	echo "$@" >> Makefile
 	cat | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	;;
+    
+    unset) #TARGET. Deletes the recipe for building TARGET from the Makefile.
+	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" Makefile
 	;;
     
     *)

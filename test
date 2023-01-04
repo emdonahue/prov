@@ -2,17 +2,19 @@
 
 assert() {
        if [[ "$2" != "$3" ]]; then
-       	   echo "Failure: $1\n\tExpected: $3\n\tReceived: $2"
+       	   echo "Failure: $1\n\tReceived: $2\n\tExpected: $3"
 	   ERR=1
        fi
 }
 
+DEPS=$(realpath ./deps)
 DIR=$(mktemp -d)
 trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
-echo "testing: "$(pwd)
-echo 'test' > test
+$DEPS set a <<< 'touch a'
+assert "set" "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
+
 
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

@@ -13,8 +13,18 @@ trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
 $DEPS set a <<< 'touch a'
-assert "set" "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
+assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
+$DEPS set a b <<< 'touch b'
+assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
+$DEPS unset a
+assert 'unset' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
 
+$DEPS set a <<< 'touch a'
+touch a
+$DEPS rm a
+[[ -f a ]]
+assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
+assert 'rm file removed' $? 0
 
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

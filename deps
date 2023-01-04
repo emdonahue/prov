@@ -4,7 +4,7 @@ CMD="$1"
 [[ $# -ne 0 ]] && shift
 case "$CMD" in
 
-    add) #[FILE]. Adds a recipe to the Makefile. Scans history to determine the recipe that created FILE. IF FILE omitted, accept recipe from stdin and scan it for ">" to determine FILE. Dependencies are automatically detected based on currently existing filenames mentioned in RECIPE.	
+    add) #[FILE], Adds a recipe to the Makefile. Scans history to determine the recipe that created FILE. IF FILE omitted, accept recipe from stdin and scan it for ">" to determine FILE. Dependencies are automatically detected based on currently existing filenames mentioned in RECIPE.	
 
 	RECIPE=$(cat)
 	
@@ -28,20 +28,15 @@ case "$CMD" in
 	echo -E "$RECIPE" | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
 	;;
 
-    rm) #TARGET. Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
+    rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
 	"$0" unset "$1"
 	rm -f "$1"
 	;;
-    --help|-h|help) #[SUBCOMMAND]. (help SUBCOMMAND). Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	if [[ $# -eq 0 ]]; then
-	    echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	    grep -E '\w+\)\s#' "$0" | sed -E 's/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^.]*). (.*)/\1 - \3/' | sed 's/^/\t/'
-	    echo 'done'
-	else
-	    grep -E '\w+\)\s#' "$0" | sed -E 's/^[[:space:]]*([[:alpha:]]+)\)\s#([^.]*). (.*)/\1 - \3\nUsage: \1 \2/'
-	fi
+    --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	;;
-    set) #TARGET [DEPENDENCY...]. Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
+    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
 	if [[ ! -f Makefile ]]; then
 	    echo 'SHELL=zsh -i' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
@@ -58,7 +53,7 @@ case "$CMD" in
 	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
 	;;
     
-    unset) #TARGET. Deletes the recipe for building TARGET from the Makefile.
+    unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" Makefile
 	;;
     

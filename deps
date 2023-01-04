@@ -1,31 +1,36 @@
 #!/bin/zsh
 
+
+fc -R
+#fc -lnlLr | grep '>'
+
+#fc -rLnlm '*>\|(#c0,1) #'"b" | head -n1
+#fc -rLnlm '*>\|(#c0,1) #'"a"
+#exit
+
 CMD="$1"
 [[ $# -ne 0 ]] && shift
 case "$CMD" in
 
-    add) #[FILE], Adds a recipe to the Makefile. Scans history to determine the recipe that created FILE. IF FILE omitted, accept recipe from stdin and scan it for ">" to determine FILE. Dependencies are automatically detected based on currently existing filenames mentioned in RECIPE.	
-
-	RECIPE=$(cat)
-	
-	[[ -z "$RECIPE" ]] && echo "No recipe" && exit 1
-	declare -U DEPENDENCIES
-	local IFS=$IFS')(><|'
-	for DEP in ${=RECIPE}
-	do
-	    if [[ -f "$DEP" && "$DEP" != $1 ]]
-	    then
-		DEPENDENCIES+=("$DEP")
+    add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
+	#fc -rLnlm '*>\|(#c0,1) #'"$f" | head -n1
+	for f in "$@"; do
+	    
+	    RECIPE=$(fc -lnLr -l 1 | grep -E '>\|?\s*'"$f" | head -n1)
+	    if [[ -z "$RECIPE" ]]; then
+		echo "No recipe found for $f" >&2
+	    else
+		declare -U DEPENDENCIES
+		local IFS=$IFS')(><|'
+		for D in ${=RECIPE}; do
+		    if [[ -f "$D" && "$D" != "$f" ]]; then
+			DEPENDENCIES+=("$D")
+		    fi
+		done
+		"$0" set "$f" "$DEPENDENCIES" <<< "$RECIPE"
 	    fi
 	done
-	sed -i '/^'${1:gs_/_\\/_}':/,${1,/^[^[:space:]]/ {/^'${1:gs_/_\\/_}':/d; /^[[:space:]]/d; /^$/d}}' Makefile
-
-	echo -n "$1:" >> Makefile
-	for DEP in $DEPENDENCIES; do
-	    echo -n " $DEP" >> Makefile
-	done
-	echo '' >> Makefile
-	echo -E "$RECIPE" | sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	    
 	;;
 
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	

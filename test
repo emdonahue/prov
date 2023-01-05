@@ -20,19 +20,22 @@ assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
 $DEPS set a b <<< 'touch b'
 assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 $DEPS unset a
-assert 'unset' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
+assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
 
 #rm
 $DEPS set a <<< 'touch a'
 touch a
 $DEPS rm a
 [[ -f a ]]
-assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
+assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" ''
 assert 'rm file removed' $? 0
 
 #add
 touch a
-assert "parse recipe" "$(parse_recipe 'b' 'cat a > b')" 'a'
+assert 'parse recipe' "$(parse_recipe 'b' 'cat a > b')" 'a'
+print -S 'cat a > b'
+$DEPS add b
+assert 'add' "$(grep -EA1 ^b Makefile)" "$(echo 'b: a\n\tcat a >| b')"
 rm a
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

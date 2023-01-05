@@ -3,7 +3,7 @@
 function parse_recipe() {
     local -U DEPENDENCIES=()
     local IFS=$IFS')(><|'
-    for D in ${=2}; do
+    for D in "${=2}"; do
 	if [[ -f "$D" && "$D" != "$1" ]]; then
 	    DEPENDENCIES+=("$D")
 	fi
@@ -19,23 +19,14 @@ case "$CMD" in
 
     add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
 	#fc -rLnlm '*>\|(#c0,1) #'"$f" | head -n1
-	for f in "$@"; do
-	    
+	for f in "$@"; do	    
 	    local RECIPE=$(fc -lnLr -l 1 | grep -E '>\|?\s*'"$f" | head -n1)
 	    if [[ -z "$RECIPE" ]]; then
 		echo "No recipe found for $f" >&2
 	    else
-		local -U DEPENDENCIES
-		local IFS=$IFS')(><|'
-		for D in ${=RECIPE}; do
-		    if [[ -f "$D" && "$D" != "$f" ]]; then
-			DEPENDENCIES+=("$D")
-		    fi
-		done
-		"$0" set "$f" "$DEPENDENCIES" <<< "$RECIPE"
+		"$0" set "$f" "$(parse_recipe "$f" "$RECIPE")" <<< "$RECIPE"
 	    fi
-	done
-	    
+	done	    
 	;;
 
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	

@@ -1,6 +1,8 @@
 #!/bin/zsh
 
-assert() {
+source $(dirname "$0")/deps >/dev/null
+
+function assert() {
        if [[ "$2" != "$3" ]]; then
        	   echo "Failure: $1\n\tReceived: $2\n\tExpected: $3"
 	   ERR=1
@@ -12,6 +14,7 @@ DIR=$(mktemp -d)
 trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
+#set
 $DEPS set a <<< 'touch a'
 assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
 $DEPS set a b <<< 'touch b'
@@ -19,6 +22,7 @@ assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 $DEPS unset a
 assert 'unset' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
 
+#rm
 $DEPS set a <<< 'touch a'
 touch a
 $DEPS rm a
@@ -26,6 +30,10 @@ $DEPS rm a
 assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" "$(echo '')"
 assert 'rm file removed' $? 0
 
+#add
+touch a
+assert "parse recipe" "$(parse_recipe 'b' 'cat a > b')" 'a'
+rm a
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"
 exit "$ERR"

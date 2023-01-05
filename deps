@@ -1,14 +1,19 @@
 #!/bin/zsh
 
+function parse_recipe() {
+    local -U DEPENDENCIES=()
+    local IFS=$IFS')(><|'
+    for D in ${=2}; do
+	if [[ -f "$D" && "$D" != "$1" ]]; then
+	    DEPENDENCIES+=("$D")
+	fi
+    done
+    echo "$DEPENDENCIES[@]"
+}
 
 fc -R
-#fc -lnlLr | grep '>'
 
-#fc -rLnlm '*>\|(#c0,1) #'"b" | head -n1
-#fc -rLnlm '*>\|(#c0,1) #'"a"
-#exit
-
-CMD="$1"
+local CMD="$1"
 [[ $# -ne 0 ]] && shift
 case "$CMD" in
 
@@ -16,11 +21,11 @@ case "$CMD" in
 	#fc -rLnlm '*>\|(#c0,1) #'"$f" | head -n1
 	for f in "$@"; do
 	    
-	    RECIPE=$(fc -lnLr -l 1 | grep -E '>\|?\s*'"$f" | head -n1)
+	    local RECIPE=$(fc -lnLr -l 1 | grep -E '>\|?\s*'"$f" | head -n1)
 	    if [[ -z "$RECIPE" ]]; then
 		echo "No recipe found for $f" >&2
 	    else
-		declare -U DEPENDENCIES
+		local -U DEPENDENCIES
 		local IFS=$IFS')(><|'
 		for D in ${=RECIPE}; do
 		    if [[ -f "$D" && "$D" != "$f" ]]; then

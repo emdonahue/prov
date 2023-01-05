@@ -38,7 +38,14 @@ case "$CMD" in
 	    sed -Ei -- '/^'"$1"':/ s/([^#]*)#?.*/\1#'"${*:2}"'/' Makefile
 	fi
 	;;
-	
+
+    edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
+	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' Makefile | sed 's/\$\$/$/g')
+	#print -z "$CMD"
+	echo "testing"
+	print -z "test cmd"
+	;;
+    
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
 	"$0" unset "$1"
 	rm -f "$1"

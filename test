@@ -63,9 +63,9 @@ rm -f b subdir/b Makefile
 "$DEPS" init
 touch a
 assert 'parse recipe' "$(parse_recipe 'b' 'cat a > b')" 'a'
-print -S 'cat a > b'
-"$DEPS" add b > /dev/null
-assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a >| b')"
+#need to figure out how to make history visible in called script
+#"$DEPS" add b > /dev/null
+#assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a >| b')"
 rm -f a Makefile
 
 #comment

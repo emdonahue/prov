@@ -5,7 +5,16 @@
 # should be run as a shell function not a script
 
 function deps() {
-    echo 'testing'
+    case "$1" in
+	edit)
+	    local RECIPE=$(sed -n '/^'"${2:gs_/_\\/_}"':/{n;p}' "$(makefile)" | sed 's/\$\$/$/g')
+	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $(makefile)" && return 1
+	    print -z "$RECIPE"
+	;;
+	*)
+	    "$functions_source[$0]" "$@"
+	;;
+    esac
 }
 
 setopt extendedglob
@@ -61,9 +70,14 @@ case "$CMD" in
 
     edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
 	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
-	print -z "nyi"
+	echo 'nyi'
 	;;
 
+    --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
+	;;
+    
     init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 	[[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	echo 'SHELL=zsh -i' >> Makefile
@@ -74,6 +88,10 @@ case "$CMD" in
 	echo '\trm -f $(TARGETS)' >> Makefile
 	;;
 
+    less) #, Opens the Makefile in less.
+	less "$(makefile)"
+	;;
+    
     mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
 	mv -i "$1" "$2"
 	sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" "$(makefile)"
@@ -82,12 +100,7 @@ case "$CMD" in
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 	"$0" unset "$1"
 	rm -f "$1"
-	;;
-
-    --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
-	;;
+	;; 
 
     set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
     	"$0" unset "$1"

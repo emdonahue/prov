@@ -45,14 +45,14 @@ case "$CMD" in
 	if [[ $# -eq 0 ]]; then
 	    "$0" help "$CMD"
 	elif [[ $# -eq 1 ]]; then
-	    grep -E '^'"$1"':' Makefile | sed -E 's/[^#]*#(.*)/\1/'
+	    grep -E '^'"$1"':' $(makefile) | sed -E 's/[^#]*#(.*)/\1/'
 	else
-	    sed -Ei -- '/^'"$1"':/ s/([^#]*)#?.*/\1#'"${*:2}"'/' Makefile
+	    sed -Ei -- '/^'"$1"':/ s/([^#]*)#?.*/\1#'"${*:2}"'/' $(makefile)
 	fi
 	;;
 
     edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' Makefile | sed 's/\$\$/$/g')
+	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
 	#print -z "$CMD"
 	echo "testing"
 	print -z "test cmd"
@@ -76,20 +76,16 @@ case "$CMD" in
 	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	;;
-    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
-	if [[ ! -f Makefile ]]; then
-	    
-	fi
-	
+    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.	
     	"$0" unset "$1"
-	echo -n "$1: " >> Makefile
+	echo -n "$1: " >> $(makefile)
 	shift
-	echo "$@" >> Makefile
-	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> Makefile
+	echo "$@" >> $(makefile)
+	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> $(makefile)
 	;;
     
     unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
-	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" Makefile
+	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" $(makefile)
 	;;
     
     *)

@@ -15,6 +15,7 @@ trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
 #set
+"$DEPS" init
 "$DEPS" set a <<< 'touch a'
 assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
 "$DEPS" set a b <<< 'touch b'
@@ -23,9 +24,8 @@ assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
 rm -f Makefile
 
-exit
-
 #rm
+"$DEPS" init
 "$DEPS" set a <<< 'touch a'
 touch a
 "$DEPS" rm a
@@ -35,18 +35,20 @@ assert 'rm file removed' $? 0
 rm -f Makefile
 
 #add
+"$DEPS" init
 touch a
 assert 'parse recipe' "$(parse_recipe 'b' 'cat a > b')" 'a'
 print -S 'cat a > b'
 "$DEPS" add b
-assert 'add' "$(grep -EA1 ^b Makefile)" "$(echo 'b: a\n\tcat a >| b')"
-rm a
-rm -f Makefile
+assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a >| b')"
+rm -f a Makefile
 
 #comment
+"$DEPS" init
 "$DEPS" set a <<< 'touch a'
 "$DEPS" comment a test comment
 assert 'comment' "$("$DEPS" comment a)" 'test comment'
+rm -f Makefile
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"
 exit "$ERR"

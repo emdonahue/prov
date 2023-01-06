@@ -14,6 +14,14 @@ DIR=$(mktemp -d)
 trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
+#init
+"$DEPS" init
+[[ -f Makefile ]]
+assert 'init creation' $? 0
+"$DEPS" init 2>/dev/null
+assert 'init already exists' $? 1
+rm -f Makefile
+
 #set
 "$DEPS" init
 "$DEPS" set a <<< 'touch a'

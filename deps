@@ -67,7 +67,12 @@ case "$CMD" in
 	echo 'clean:' >> Makefile
 	echo '\trm -f $(TARGETS)' >> Makefile
 	;;
-    
+
+    mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
+	mv -i "$1" "$2"
+	sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" $(makefile)
+	;;
+	
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
 	"$0" unset "$1"
 	rm -f "$1"

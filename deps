@@ -1,5 +1,12 @@
 #!/bin/zsh
 
+# REQUIREMENTS:
+# HISTFILE should be set in .zshrc
+# should be run as a shell function not a script
+
+setopt extendedglob
+fc -R
+
 function parse_recipe() {
     local -U DEPENDENCIES=()
     local IFS=$IFS')(><|'
@@ -11,10 +18,15 @@ function parse_recipe() {
     echo "$DEPENDENCIES[@]"
 }
 
-fc -R
+function makefile() {
+    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
+    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && exit 1
+    echo "$MAKEFILE"
+}
 
 local CMD="$1"
 [[ $# -ne 0 ]] && shift
+
 case "$CMD" in
 
     add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
@@ -45,6 +57,16 @@ case "$CMD" in
 	echo "testing"
 	print -z "test cmd"
 	;;
+
+    init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
+	[[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; exit 1}
+	echo 'SHELL=zsh -i' >> Makefile
+	echo '.PHONY: all clean' >> Makefile
+	echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
+	echo 'all: $(TARGETS)' >> Makefile
+	echo 'clean:' >> Makefile
+	echo '\trm -f $(TARGETS)' >> Makefile
+	;;
     
     rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
 	"$0" unset "$1"
@@ -56,12 +78,7 @@ case "$CMD" in
 	;;
     set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
 	if [[ ! -f Makefile ]]; then
-	    echo 'SHELL=zsh -i' >> Makefile
-	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
-	    echo 'all: $(TARGETS)' >> Makefile
-	    echo 'clean:' >> Makefile
-	    echo '\trm -f $(TARGETS)' >> Makefile
+	    
 	fi
 	
     	"$0" unset "$1"

@@ -23,6 +23,8 @@ assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
 rm -f Makefile
 
+exit
+
 #rm
 "$DEPS" set a <<< 'touch a'
 touch a

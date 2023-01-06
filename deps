@@ -31,14 +31,15 @@ case "$CMD" in
 
     add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
 	#fc -rLnlm '*>\|(#c0,1) #'"$f" | head -n1
-	for f in "$@"; do	    
+	for f in "$@"; do
 	    local RECIPE=$(fc -lnLr -l 1 | grep -E '>\|?\s*'"$f" | head -n1)
 	    if [[ -z "$RECIPE" ]]; then
 		echo "No recipe found for $f" >&2
 	    else
+		echo "Recipe added to $(makefile):\n$f $(parse_recipe "$f" "$RECIPE")\n\t$RECIPE"
 		"$0" set "$f" "$(parse_recipe "$f" "$RECIPE")" <<< "$RECIPE"
 	    fi
-	done	    
+	done
 	;;
 
     comment) #TARGET [COMMENT], Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
@@ -52,10 +53,10 @@ case "$CMD" in
 	;;
 
     edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
-	#print -z "$CMD"
-	echo "testing"
-	print -z "test cmd"
+	local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
+	print -s "$RECIPE"
+	echo "testing $?"
+	echo "$RECIPE"
 	;;
 
     init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
@@ -72,27 +73,29 @@ case "$CMD" in
 	mv -i "$1" "$2"
 	sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" $(makefile)
 	;;
-	
-    rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.	
+
+    rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 	"$0" unset "$1"
 	rm -f "$1"
 	;;
+
     --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	;;
-    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.	
+
+    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
     	"$0" unset "$1"
 	echo -n "$1: " >> $(makefile)
 	shift
 	echo "$@" >> $(makefile)
 	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> $(makefile)
 	;;
-    
+
     unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" $(makefile)
 	;;
-    
+
     *)
 	"$0" help
 	;;

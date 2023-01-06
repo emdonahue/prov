@@ -47,7 +47,7 @@ case "$CMD" in
 	elif [[ $# -eq 1 ]]; then
 	    grep -E '^'"$1"':' $(makefile) | sed -E 's/[^#]*#(.*)/\1/'
 	else
-	    sed -Ei -- '/^'"$1"':/ s/([^#]*)#?.*/\1#'"${*:2}"'/' $(makefile)
+	    sed -Ei -- '/^'"${1:gs_/_\\/_}"':/ s/([^#]*)#?.*/\1#'"${*:2:gs_/_\\/_}"'/' $(makefile)
 	fi
 	;;
 
@@ -90,7 +90,7 @@ case "$CMD" in
 	;;
     
     unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
-	awk -i inplace "/^$1/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" $(makefile)
+	awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" $(makefile)
 	;;
     
     *)

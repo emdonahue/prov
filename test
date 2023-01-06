@@ -11,6 +11,7 @@ function assert() {
 
 DEPS=$(realpath ./deps)
 DIR=$(mktemp -d)
+mkdir "$DIR/subdir"
 trap "rm -rf $DIR" EXIT
 cd "$DIR"
 
@@ -41,6 +42,22 @@ touch a
 assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" ''
 assert 'rm file removed' $? 0
 rm -f Makefile
+
+#mv
+"$DEPS" init
+touch a
+"$DEPS" set a <<< 'touch a'
+"$DEPS" mv a b
+[[ -f b ]]
+assert 'mv file' $? 0
+assert 'mv recipe' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: \n\ttouch b')"
+touch subdir/a
+"$DEPS" set subdir/a <<< 'touch subdir/a'
+"$DEPS" mv subdir/a subdir/b
+[[ -f subdir/b ]]
+assert 'mv subdir file' $? 0
+assert 'mv subdir recipe' "$(grep -EA1 '^subdir/b' Makefile)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
+rm -f b subdir/b Makefile
 
 #add
 "$DEPS" init

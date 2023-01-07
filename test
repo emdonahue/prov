@@ -9,7 +9,8 @@ function assert() {
        fi
 }
 
-DEPS=$(realpath ./deps)
+#DEPS=$(realpath ./deps)
+DEPS=deps
 DIR=$(mktemp -d)
 mkdir "$DIR/subdir"
 trap "rm -rf $DIR" EXIT

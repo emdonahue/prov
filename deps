@@ -4,130 +4,112 @@
 # HISTFILE should be set in .zshrc
 # should be run as a shell function not a script
 
-function makefile() {
-    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
-    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && exit 1
-    echo "$MAKEFILE"
-}
-
-# Edit requires print -z, which is only available in shell functions, so hack in a ghost shell function that delegates to the script if not editing
 function deps() {
-    echo 'function'
-    case "$1" in
-	edit)
-	    MAKEFILE="$(makefile)"
-	    if [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(sed -n '/^'"${2:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g')
-	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
-	    print -z "$RECIPE"
-	    echo 'somehow unreached'
-	;;
-	*)
-	    "$functions_source[$0]" "$@"
-	;;
-    esac
-}
 
-echo 'start'
+    setopt extendedglob
+    fc -R
+    
+    function makefile() {
+	local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
+	[[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && exit 1
+	echo "$MAKEFILE"
+    }    
 
-
-[[ "$0" == 'deps' ]] && deps "$@" && exit #If called as function, redirect to function and don't process remainder of script
-
-return 0
-
-setopt extendedglob
-fc -R
-
-function parse_recipe() {
-    local -U DEPENDENCIES=()
-    local IFS=$IFS')(><|'
-    for D in "${=2}"; do
-	if [[ -f "$D" && "$D" != "$1" ]]; then
-	    DEPENDENCIES+=("$D")
-	fi
-    done
-    echo "$DEPENDENCIES[@]"
-}
-
-local CMD="$1"
-[[ $# -ne 0 ]] && shift
-
-case "$CMD" in
-
-    add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
-	# fc -rLnlm '*>\|(#c0,1)
-	##'"$f" | head -n1
-	for f in "$@"; do
-	    local RECIPE=$(fc -nrl 1 | grep -E '>\|?\s*'"$f" | head -n1)
-	    echo "recipe: $RECIPE"
-	    if [[ -z "$RECIPE" ]]; then
-		echo "No recipe found for $f" >&2
-	    else
-		local DEPENDENCIES="$(parse_recipe "$f" "$RECIPE")"
-		echo "Recipe added to $(makefile):\n$f $DEPENDENCIES\n\t$RECIPE"
-		"$0" set "$f" "$DEPENDENCIES" <<< "$RECIPE"
+    local function parse_recipe() {
+	local -U DEPENDENCIES=()
+	local IFS=$IFS')(><|'
+	for D in "${=2}"; do
+	    if [[ -f "$D" && "$D" != "$1" ]]; then
+		DEPENDENCIES+=("$D")
 	    fi
 	done
-	;;
+	echo "$DEPENDENCIES[@]"
+    }
 
-    comment) #TARGET [COMMENT], Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
-	if [[ $# -eq 0 ]]; then
-	    "$0" help "$CMD"
-	elif [[ $# -eq 1 ]]; then
-	    grep -E '^'"$1"':' "$(makefile)" | sed -E 's/[^#]*#(.*)/\1/'
-	else
-	    sed -Ei -- '/^'"${1:gs_/_\\/_}"':/ s/([^#]*)#?.*/\1#'"${*:2:gs_/_\\/_}"'/' "$(makefile)"
-	fi
-	;;
+    local CMD="$1"
+    [[ $# -ne 0 ]] && shift
 
-    edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
-	exit
-	;;
+    case "$CMD" in
 
-    --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	echo "grepping: $(realpath $0)"
-	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
-	;;
-    
-    init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
-	[[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
-	echo 'SHELL=zsh -i' >> Makefile
-	echo '.PHONY: all clean' >> Makefile
-	echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
-	echo 'all: $(TARGETS)' >> Makefile
-	echo 'clean:' >> Makefile
-	echo '\trm -f $(TARGETS)' >> Makefile
-	;;
+	add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
+	    # fc -rLnlm '*>\|(#c0,1)
+	    ##'"$f" | head -n1
+	    for f in "$@"; do
+		local RECIPE=$(fc -nrl 1 | grep -E '>\|?\s*'"$f" | head -n1)
+		echo "recipe: $RECIPE"
+		if [[ -z "$RECIPE" ]]; then
+		    echo "No recipe found for $f" >&2
+		else
+		    local DEPENDENCIES="$(parse_recipe "$f" "$RECIPE")"
+		    echo "Recipe added to $(makefile):\n$f $DEPENDENCIES\n\t$RECIPE"
+		    "$0" set "$f" "$DEPENDENCIES" <<< "$RECIPE"
+		fi
+	    done
+	    ;;
 
-    less) #, Opens the Makefile in less.
-	less "$(makefile)"
-	;;
-    
-    mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-	mv -i "$1" "$2"
-	sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" "$(makefile)"
-	;;
+	comment) #TARGET [COMMENT], Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
+	    if [[ $# -eq 0 ]]; then
+		"$0" help "$CMD"
+	    elif [[ $# -eq 1 ]]; then
+		grep -E '^'"$1"':' "$(makefile)" | sed -E 's/[^#]*#(.*)/\1/'
+	    else
+		sed -Ei -- '/^'"${1:gs_/_\\/_}"':/ s/([^#]*)#?.*/\1#'"${*:2:gs_/_\\/_}"'/' "$(makefile)"
+	    fi
+	    ;;
 
-    rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-	"$0" unset "$1"
-	rm -f "$1"
-	;; 
+	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
+	    local MAKEFILE="$(makefile)"	
+	    [[ ! -f "$MAKEFILE" ]] && return 1
+	    local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g')	
+	    local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g;s/^[[:space:]]*//')
+	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
+	    print -z "$RECIPE"
+	    ;;
 
-    set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
-    	"$0" unset "$1"
-	echo -n "$1: " >> "$(makefile)"
-	shift
-	echo "$@" >> "$(makefile)"
-	<&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$(makefile)"
-	;;
+	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	    echo "grepping: $(realpath $0)"
+	    if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	       grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
+	       ;;
+	       
+	       init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
+		   [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
+		   echo 'SHELL=zsh -i' >> Makefile
+		   echo '.PHONY: all clean' >> Makefile
+		   echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
+		   echo 'all: $(TARGETS)' >> Makefile
+		   echo 'clean:' >> Makefile
+		   echo '\trm -f $(TARGETS)' >> Makefile
+		   ;;
 
-    unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
-	awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$(makefile)"
-	;;
+	       less) #, Opens the Makefile in less.
+		   less "$(makefile)"
+		   ;;
+	       
+	       mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
+		   mv -i "$1" "$2"
+		   sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" "$(makefile)"
+		   ;;
 
-    *)
-	"$0" help
-	;;
-esac
+	       rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
+		   "$0" unset "$1"
+		   rm -f "$1"
+		   ;; 
+
+	       set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
+    		   "$0" unset "$1"
+		   echo -n "$1: " >> "$(makefile)"
+		   shift
+		   echo "$@" >> "$(makefile)"
+		   <&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$(makefile)"
+		   ;;
+
+	       unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
+		   awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$(makefile)"
+		   ;;
+
+	       *)
+		   "$0" help
+		   ;;
+    esac
+}

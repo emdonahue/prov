@@ -12,10 +12,13 @@ function deps() {
 	    print -z "$RECIPE"
 	;;
 	*)
+	    echo "running fn: $functions_source[$0] with 0: $0"
 	    "$functions_source[$0]" "$@"
 	;;
     esac
 }
+
+[[ "$0" == 'deps' ]] && deps "$@" && exit #If called as function, redirect to function and don't process remainder of script
 
 setopt extendedglob
 fc -R
@@ -74,6 +77,7 @@ case "$CMD" in
 	;;
 
     --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	echo "grepping: $(realpath $0)"
 	if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	grep -E -- "${1:-\\w+}\)\s#" "$0" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	;;

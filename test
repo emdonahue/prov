@@ -74,7 +74,7 @@ assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a > b')"
 cd subdir
 touch a
 "$DEPS" add b > /dev/null
-assert 'add subdir' "$(grep -EA1 '^subdir/b' ../Makefile)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a >| subdir/b')"
+assert 'add subdir' "$(grep -EA1 '^subdir/b' ../Makefile)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
 teardown
 
 #comment

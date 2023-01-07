@@ -66,48 +66,48 @@ function deps() {
 
 	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	    echo "grepping: $(realpath $0)"
-	    if [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	       grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
-	       ;;
-	       
-	       init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
-		   [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
-		   echo 'SHELL=zsh -i' >> Makefile
-		   echo '.PHONY: all clean' >> Makefile
-		   echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
-		   echo 'all: $(TARGETS)' >> Makefile
-		   echo 'clean:' >> Makefile
-		   echo '\trm -f $(TARGETS)' >> Makefile
-		   ;;
+	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
+	    ;;
+	
+	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
+	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
+	    echo 'SHELL=zsh -i' >> Makefile
+	    echo '.PHONY: all clean' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
+	    echo 'all: $(TARGETS)' >> Makefile
+	    echo 'clean:' >> Makefile
+	    echo '\trm -f $(TARGETS)' >> Makefile
+	    ;;
 
-	       less) #, Opens the Makefile in less.
-		   less "$MAKEFILE"
-		   ;;
-	       
-	       mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-		   mv -i "$1" "$2"
-		   sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" "$MAKEFILE"
-		   ;;
+	less) #, Opens the Makefile in less.
+	    less "$MAKEFILE"
+	    ;;
+	
+	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
+	    mv -i "$1" "$2"
+	    sed -i "s|\b$1\b|$2|g" "$MAKEFILE"
+	    ;;
 
-	       rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-		   "$0" unset "$1"
-		   rm -f "$1"
-		   ;; 
+	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
+	    "$0" unset "$1"
+	    rm -f "$1"
+	    ;; 
 
-	       set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
-    		   "$0" unset "$1"
-		   echo -n "$1: " >> "$MAKEFILE"
-		   shift
-		   echo "$@" >> "$MAKEFILE"
-		   <&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$MAKEFILE"
-		   ;;
+	set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
+    	    "$0" unset "$1"
+	    echo -n "$1: " >> "$MAKEFILE"
+	    shift
+	    echo "$@" >> "$MAKEFILE"
+	    <&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$MAKEFILE"
+	    ;;
 
-	       unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
-		   awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
-		   ;;
+	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
+	    awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+	    ;;
 
-	       *)
-		   "$0" help
-		   ;;
+	*)
+	    "$0" help
+	    ;;
     esac
 }

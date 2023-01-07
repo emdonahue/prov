@@ -9,11 +9,16 @@ function assert() {
        fi
 }
 
+function teardown() {
+    cd "$DIR"
+    rm -f Makefile a b subdir/a subdir/b
+}
+
 #DEPS=$(realpath ./deps)
 DEPS=deps
 DIR=$(mktemp -d)
-mkdir "$DIR/subdir"
 trap "rm -rf $DIR" EXIT
+mkdir "$DIR/subdir"
 cd "$DIR"
 
 #init
@@ -22,7 +27,7 @@ cd "$DIR"
 assert 'init creation' $? 0
 "$DEPS" init 2>/dev/null
 assert 'init already exists' $? 1
-rm -f Makefile
+teardown
 
 #set
 "$DEPS" init
@@ -32,7 +37,7 @@ assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
 assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 "$DEPS" unset a
 assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
-rm -f Makefile
+teardown
 
 #rm
 "$DEPS" init
@@ -42,7 +47,7 @@ touch a
 [[ -f a ]]
 assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" ''
 assert 'rm file removed' $? 0
-rm -f Makefile
+teardown
 
 #mv
 "$DEPS" init
@@ -58,23 +63,26 @@ touch subdir/a
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
 assert 'mv subdir recipe' "$(grep -EA1 '^subdir/b' Makefile)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
-rm -f b subdir/b Makefile
+teardown
 
 #add
 "$DEPS" init
 touch a
-assert 'parse recipe' "$(parse_recipe 'b' 'cat a > b')" 'a'
-#need to figure out how to make history visible in called script
-#"$DEPS" add b > /dev/null
-#assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a >| b')"
-rm -f a Makefile
+print -S 'cat a > b'
+"$DEPS" add b > /dev/null
+assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a > b')"
+cd subdir
+touch a
+"$DEPS" add b > /dev/null
+assert 'add subdir' "$(grep -EA1 '^subdir/b' ../Makefile)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a >| subdir/b')"
+teardown
 
 #comment
 "$DEPS" init
 "$DEPS" set a <<< 'touch a'
 "$DEPS" comment a test comment
 assert 'comment' "$("$DEPS" comment a)" 'test comment'
-rm -f Makefile
+teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"
 exit "$ERR"

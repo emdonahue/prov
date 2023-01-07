@@ -15,8 +15,10 @@ function deps() {
     case "$CMD" in
 	-h|--help|help|init);;
 	*)
-	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
+	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null	    
 	    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && return 1
+	    local RELPATH=${$(echo $(pwd)'/')#$(echo $(dirname "$MAKEFILE")'/')}
+	    echo "RELPATH: $RELPATH" 1>&2
 	    ;;
     esac
 
@@ -33,12 +35,12 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$1" ]]; then
-			    DEPENDENCIES+=("$D")
+			    DEPENDENCIES+=("$RELPATH$D")
 			fi
 		    done
 		    echo "DEPS: $DEPENDENCIES"
-		    echo "Recipe added to $MAKEFILE:\n$f $DEPENDENCIES\n\t$RECIPE"
-		    "$0" set "$f" "$DEPENDENCIES" <<< "$RECIPE"
+		    echo "Recipe added to $MAKEFILE:\n$RELPATH$f $DEPENDENCIES\n\t$RECIPE"
+		    "$0" set "$RELPATH$f" "$DEPENDENCIES" <<< "$RECIPE"
 		fi
 	    done
 	    ;;

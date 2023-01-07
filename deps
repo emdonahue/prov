@@ -4,21 +4,36 @@
 # HISTFILE should be set in .zshrc
 # should be run as a shell function not a script
 
+function makefile() {
+    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
+    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && exit 1
+    echo "$MAKEFILE"
+}
+
+# Edit requires print -z, which is only available in shell functions, so hack in a ghost shell function that delegates to the script if not editing
 function deps() {
+    echo 'function'
     case "$1" in
 	edit)
-	    local RECIPE=$(sed -n '/^'"${2:gs_/_\\/_}"':/{n;p}' "$(makefile)" | sed 's/\$\$/$/g')
-	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $(makefile)" && return 1
+	    MAKEFILE="$(makefile)"
+	    if [[ ! -f "$MAKEFILE" ]] && return 1
+	    local RECIPE=$(sed -n '/^'"${2:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g')
+	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
 	    print -z "$RECIPE"
+	    echo 'somehow unreached'
 	;;
 	*)
-	    echo "running fn: $functions_source[$0] with 0: $0"
 	    "$functions_source[$0]" "$@"
 	;;
     esac
 }
 
+echo 'start'
+
+
 [[ "$0" == 'deps' ]] && deps "$@" && exit #If called as function, redirect to function and don't process remainder of script
+
+return 0
 
 setopt extendedglob
 fc -R
@@ -32,12 +47,6 @@ function parse_recipe() {
 	fi
     done
     echo "$DEPENDENCIES[@]"
-}
-
-function makefile() {
-    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
-    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && exit 1
-    echo "$MAKEFILE"
 }
 
 local CMD="$1"
@@ -73,7 +82,7 @@ case "$CMD" in
 
     edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
 	#local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' $(makefile) | sed 's/\$\$/$/g')
-	echo 'nyi'
+	exit
 	;;
 
     --help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.

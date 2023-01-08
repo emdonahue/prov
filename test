@@ -63,6 +63,9 @@ touch subdir/a
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
 assert 'mv subdir recipe' "$(grep -EA1 '^subdir/b' Makefile)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
+cd subdir
+"$DEPS" mv ../b ../a
+assert 'mv relpath' "$(grep -EA1 '^a' ../Makefile)" "$(echo 'a: \n\ttouch a')"
 teardown
 
 #add

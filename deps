@@ -86,7 +86,9 @@ function deps() {
 	
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
 	    mv -i "$1" "$2"
-	    sed -i "s/\b${1:gs_/_\\/_}\b/${2:gs_/_\\/_}/g" "$MAKEFILE"
+	    local a=$(realpath --relative-to=$(dirname "$MAKEFILE") "$1")
+	    local b=$(realpath --relative-to=$(dirname "$MAKEFILE") "$2")
+	    sed -i "s/\b${a:gs_/_\\/_}\b/${b:gs_/_\\/_}/g" "$MAKEFILE"
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.

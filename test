@@ -47,6 +47,11 @@ touch a
 [[ -f a ]]
 assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" ''
 assert 'rm file removed' $? 0
+touch a
+cd subdir
+"$DEPS" set a <<< 'touch a'
+"$DEPS" rm ../a
+assert 'rm relpath' "$(grep -EA1 '^a' ../Makefile)" ''
 teardown
 
 #mv

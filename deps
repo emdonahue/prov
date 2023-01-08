@@ -92,7 +92,7 @@ function deps() {
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-	    "$0" unset "$1"
+	    "$0" unset "$(realpath --relative-to=$(dirname "$MAKEFILE") "$1")"
 	    rm -f "$1"
 	    ;; 
 

@@ -1,9 +1,5 @@
 #!/bin/zsh
 
-# REQUIREMENTS:
-# HISTFILE should be set in .zshrc
-# should be run as a shell function not a script
-
 function deps() {
     
     setopt extendedglob
@@ -23,7 +19,7 @@ function deps() {
     # Parse the main subcommand
     case "$CMD" in
 
-	add) #[FILE...], Scans history to determine the recipe that created each FILE (looks for ">"). Dependencies are automatically detected based on currently existing filenames mentioned in the recipe. Use set to add a recipe explicitly if these heuristics fail.
+	add) #[FILE...], Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
 	    for f in "$@"; do
 		local RECIPE=$(fc -nrl -1000 | grep -E '>\|?\s*'"$f" | head -n1)
 		if [[ -z "$RECIPE" ]]; then
@@ -65,7 +61,7 @@ function deps() {
 
 	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	    echo "grepping: $(realpath $0)"
-	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation and dependency management from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	    ;;
 	

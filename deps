@@ -17,7 +17,6 @@ function deps() {
 	*)
 	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null	    
 	    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && return 1
-	    local RELPATH=${$(echo $(pwd)'/')#$(echo $(dirname "$MAKEFILE")'/')}
 	    ;;
     esac
 
@@ -34,13 +33,13 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do			
 			if [[ -f "$D" && "$D" != "$1" ]]; then
-			    RECIPE=$(sed -E "s|\b$D\b|$RELPATH$D|g"<<< "$RECIPE")
-			    DEPENDENCIES+=("$RELPATH$D")
+			    RECIPE=$(sed -E "s|\b$D\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$D")|g"<<< "$RECIPE")
+			    DEPENDENCIES+=("$(realpath --relative-to=$(dirname "$MAKEFILE") "$D")")
 			fi
 		    done
-		    RECIPE=$(sed -E "s|\b$f\b|$RELPATH$f|g"<<< "$RECIPE")
-		    echo "Recipe added to $MAKEFILE:\n$RELPATH$f $DEPENDENCIES\n\t$RECIPE"
-		    "$0" set "$RELPATH$f" "$DEPENDENCIES" <<< "$RECIPE"
+		    RECIPE=$(sed -E "s|\b$f\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
+		    echo "Recipe added to $MAKEFILE:\n$(realpath --relative-to=$(dirname "$MAKEFILE") "$f") $DEPENDENCIES\n\t$RECIPE"
+		    "$0" set "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		fi
 	    done
 	    ;;

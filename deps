@@ -21,7 +21,7 @@ function deps() {
 
 	add) #[FILE...], Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
 	    for f in "$@"; do
-		local RECIPE=$(fc -nrl -1000 | grep -E '>\|?\s*'"$f" | head -n1)
+		local RECIPE=$(fc -nrl -1000 | grep -E ">\|?\s*$f([ )(><|]+|$)" | head -n1)
 		if [[ -z "$RECIPE" ]]; then
 		    echo "No recipe found for $f" >&2
 		else

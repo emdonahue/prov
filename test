@@ -103,7 +103,6 @@ assert 'blank comment' "$("$DEPS" comment a)" ''
 assert 'dependency comment' "$("$DEPS" comment a)" 'test comment'
 "$DEPS" comment a revised comment
 assert 'dependency comment revision' "$("$DEPS" comment a)" 'revised comment'
-#cat $DIR/Makefile
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

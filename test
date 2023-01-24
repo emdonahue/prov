@@ -95,6 +95,15 @@ teardown
 "$DEPS" set a <<< 'touch a'
 "$DEPS" comment a test comment
 assert 'comment' "$("$DEPS" comment a)" 'test comment'
+"$DEPS" comment a revised comment
+assert 'revise comment' "$("$DEPS" comment a)" 'revised comment'
+"$DEPS" set a b <<< 'touch a'
+assert 'blank comment' "$("$DEPS" comment a)" ''
+"$DEPS" comment a test comment
+assert 'dependency comment' "$("$DEPS" comment a)" 'test comment'
+"$DEPS" comment a revised comment
+assert 'dependency comment revision' "$("$DEPS" comment a)" 'revised comment'
+#cat $DIR/Makefile
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

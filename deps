@@ -44,8 +44,9 @@ function deps() {
 
 	comment) #TARGET [COMMENT], Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
 	    if [[ $# -eq 0 ]]; then
-		"$0" help "$CMD"
+		"$0" help "$CMD" 1>&2 && return 1		
 	    elif [[ $# -eq 1 ]]; then
+		grep -E '^'"$1"':' "$MAKEFILE" | grep -q '#' || return 1
 		grep -E '^'"$1"':' "$MAKEFILE" | sed -E 's/[^#]*#(.*)/\1/'
 	    else
 		sed -Ei -- '/^'"${1:gs_/_\\/_}"':/ s/([^#]*)#?.*/\1#'"${*:2:gs_/_\\/_}"'/' "$MAKEFILE"

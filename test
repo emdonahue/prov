@@ -39,6 +39,11 @@ assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
 assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
 teardown
 
+"$DEPS" init
+"$DEPS" set subdir/a subdir/b <<< 'cat subdir/b > subdir/a'
+assert 'echo' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: subdir/b\n\tcat subdir/b > subdir/a')"
+teardown
+
 #rm
 "$DEPS" init
 "$DEPS" set a <<< 'touch a'

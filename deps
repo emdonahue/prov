@@ -50,13 +50,16 @@ function deps() {
 	    fi
 	    ;;
 
-	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	    local MAKEFILE="$MAKEFILE"	
+	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g')	
-	    local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g;s/^[[:space:]]*//')
+	    #local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g;s/^[[:space:]]*//')
+	    local RECIPE=$(grep -EA1 "^$1:" "$MAKEFILE" | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
-	    print -z "$RECIPE"
+	    echo "$RECIPE"
+	    ;;
+	
+	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
+	    print -z "$("$0" echo "$1")"
 	    ;;
 
 	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.

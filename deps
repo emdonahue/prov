@@ -34,8 +34,10 @@ function deps() {
 			fi
 		    done
 		    RECIPE=$(sed -E "s|\b$f\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
-		    echo "Recipe added to $MAKEFILE:\n$(realpath --relative-to=$(dirname "$MAKEFILE") "$f"): $DEPENDENCIES\n\t$RECIPE"
 		    "$0" set "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
+		    echo "Recipe added to $MAKEFILE:"
+		    "$0" echo "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")"
+		    #$(realpath --relative-to=$(dirname "$MAKEFILE") "$f"): $DEPENDENCIES\n\t$RECIPE"
 		fi
 	    done
 	    ;;
@@ -59,7 +61,7 @@ function deps() {
 	    ;;
 	
 	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	    print -z "$("$0" echo "$1")"
+	    print -z "$("$0" echo "$1" | tail -n -2 | sed -E 's/^\s*//')"
 	    ;;
 
 	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.

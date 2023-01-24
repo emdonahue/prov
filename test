@@ -82,7 +82,7 @@ teardown
 "$DEPS" init
 touch a
 print -S 'cat a > b'
-"$DEPS" add b > /dev/null
+assert 'added msg' "$("$DEPS" add b)" "$(echo "Recipe added to $DIR/Makefile:\nb: a\n\tcat a > b")"
 assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a > b')"
 cd subdir
 touch a

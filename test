@@ -32,13 +32,12 @@ teardown
 #set
 "$DEPS" init
 "$DEPS" set a <<< 'touch a'
-assert 'set initial' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: \n\ttouch a')"
+assert 'set initial' "$("$DEPS" echo a)" "$(echo 'a: \n\ttouch a')"
 "$DEPS" set a b <<< 'touch b'
-assert 'set reset' "$(grep -EA1 '^a' Makefile)" "$(echo 'a: b\n\ttouch b')"
+assert 'set reset' "$("$DEPS" echo a)" "$(echo 'a: b\n\ttouch b')"
 "$DEPS" unset a
 assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
 teardown
-
 "$DEPS" init
 "$DEPS" set subdir/a subdir/b <<< 'cat subdir/b > subdir/a'
 assert 'echo' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: subdir/b\n\tcat subdir/b > subdir/a')"
@@ -66,28 +65,30 @@ touch a
 "$DEPS" mv a b
 [[ -f b ]]
 assert 'mv file' $? 0
-assert 'mv recipe' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: \n\ttouch b')"
+assert 'mv recipe' "$("$DEPS" echo b)" "$(echo 'b: \n\ttouch b')"
 touch subdir/a
 "$DEPS" set subdir/a <<< 'touch subdir/a'
 "$DEPS" mv subdir/a subdir/b
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
-assert 'mv subdir recipe' "$(grep -EA1 '^subdir/b' Makefile)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
+assert 'mv subdir recipe' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
 cd subdir
 "$DEPS" mv ../b ../a
-assert 'mv relpath' "$(grep -EA1 '^a' ../Makefile)" "$(echo 'a: \n\ttouch a')"
+assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
 teardown
 
 #add
 "$DEPS" init
 touch a
+touch b
 print -S 'cat a > b'
 assert 'added msg' "$("$DEPS" add b)" "$(echo "Recipe added to $DIR/Makefile:\nb: a\n\tcat a > b")"
-assert 'add' "$(grep -EA1 '^b' Makefile)" "$(echo 'b: a\n\tcat a > b')"
+assert 'add' "$("$DEPS" echo b)" "$(echo 'b: a\n\tcat a > b')"
 cd subdir
 touch a
+touch b
 "$DEPS" add b > /dev/null
-assert 'add subdir' "$(grep -EA1 '^subdir/b' ../Makefile)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
+assert 'add subdir' "$("$DEPS" echo b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
 teardown
 
 #comment

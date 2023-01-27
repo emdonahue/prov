@@ -1,5 +1,9 @@
 #!/bin/zsh
 
+#TODO implement status
+#TODO add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
+#make mv handle multiple targets and directories
+
 function deps() {
 
     setopt extendedglob
@@ -36,7 +40,7 @@ function deps() {
 		    RECIPE=$(sed -E "s|\b$f\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
 		    "$0" set "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
-		    "$0" echo "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")"
+		    "$0" echo "$f"
 		    #$(realpath --relative-to=$(dirname "$MAKEFILE") "$f"): $DEPENDENCIES\n\t$RECIPE"
 		fi
 	    done
@@ -57,8 +61,7 @@ function deps() {
 
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    #local RECIPE=$(sed -n '/^'"${1:gs_/_\\/_}"':/{n;p}' "$MAKEFILE" | sed 's/\$\$/$/g;s/^[[:space:]]*//')
-	    local RECIPE=$(grep -EA1 "^$1:" "$MAKEFILE" | sed 's/\$\$/$/g')
+	    local RECIPE=$(grep -EA1 "^$(realpath --relative-to=$(dirname "$MAKEFILE") "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
 	    echo "$RECIPE"
 	    ;;
@@ -107,6 +110,10 @@ function deps() {
 	    <&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$MAKEFILE"
 	    ;;
 
+	status) #, Prints all files in Makefile directory not managed by Makefile.
+	    echo 'Not yet implemented' && return 1
+	    ;;
+	
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
 	    ;;

@@ -26,5 +26,6 @@ less  - Opens the Makefile in less.
 mv SOURCE DEST - Moves a file with mv and updates the Makefile accordingly.
 rm TARGET - Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 set TARGET [DEPENDENCY...] - Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
+status  - Prints all files in Makefile directory not managed by Makefile.
 unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 ```

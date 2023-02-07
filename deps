@@ -2,7 +2,8 @@
 
 #TODO implement status
 #TODO add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
-#make mv handle multiple targets and directories
+#TODO make mv handle multiple targets and directories
+#TODO make -h flag call script with cmd as help arg
 
 function deps() {
 
@@ -33,15 +34,14 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do			
 			if [[ -f "$D" && "$D" != "$1" ]]; then
-			    RECIPE=$(sed -E "s|\b$D\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$D")|g"<<< "$RECIPE")
-			    DEPENDENCIES+=("$(realpath --relative-to=$(dirname "$MAKEFILE") "$D")")
+			    RECIPE=$(sed -E "s|\b$D\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")|g"<<< "$RECIPE")
+			    DEPENDENCIES+=("$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")")
 			fi
 		    done
-		    RECIPE=$(sed -E "s|\b$f\b|$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
-		    "$0" set "$(realpath --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
+		    RECIPE=$(sed -E "s|\b$f\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
+		    "$0" set "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"
-		    #$(realpath --relative-to=$(dirname "$MAKEFILE") "$f"): $DEPENDENCIES\n\t$RECIPE"
 		fi
 	    done
 	    ;;
@@ -61,7 +61,7 @@ function deps() {
 
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(grep -EA1 "^$(realpath --relative-to=$(dirname "$MAKEFILE") "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
+	    local RECIPE=$(grep -EA1 "^$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
 	    echo "$RECIPE"
 	    ;;
@@ -71,7 +71,7 @@ function deps() {
 	    ;;
 
 	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	    echo "grepping: $(realpath $0)"
+	    echo "grepping: $(realpath -s $0)"
 	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	    ;;
@@ -92,13 +92,13 @@ function deps() {
 	
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
 	    mv -i "$1" "$2"
-	    local a=$(realpath --relative-to=$(dirname "$MAKEFILE") "$1")
-	    local b=$(realpath --relative-to=$(dirname "$MAKEFILE") "$2")
+	    local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
+	    local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
 	    sed -i "s/\b${a:gs_/_\\/_}\b/${b:gs_/_\\/_}/g" "$MAKEFILE"
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-	    "$0" unset "$(realpath --relative-to=$(dirname "$MAKEFILE") "$1")"
+	    "$0" unset "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")"
 	    rm -f "$1"
 	    ;; 
 

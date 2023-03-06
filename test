@@ -11,7 +11,9 @@ function assert() {
 
 function teardown() {
     cd "$DIR"
-    rm -f Makefile a b subdir/a subdir/b
+    rm -f Makefile a b subdir/a subdir/b subdir2/a subdir2/b
+    mkdir -p subdir
+    rmdir subdir2 2>/dev/null    
 }
 
 DEPS=deps
@@ -91,6 +93,13 @@ assert 'mv multiple recipe a' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv multiple recipe b' "$("$DEPS" echo ../b)" "$(echo 'b: \n\ttouch b')"
 assert 'mv multiple recipe a remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
 assert 'mv multiple recipe b remove' "$("$DEPS" echo b)" "No recipe for b found in $DIR/Makefile"
+cd ..
+"$DEPS" mv a b subdir
+"$DEPS" mv subdir subdir2
+assert 'mv dir recipe a' "$("$DEPS" echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch subdir2/a')"
+assert 'mv dir recipe b' "$("$DEPS" echo subdir2/b)" "$(echo 'subdir2/b: \n\ttouch subdir2/b')"
+assert 'mv dir recipe a remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
+assert 'mv dir recipe b remove' "$("$DEPS" echo b)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #add

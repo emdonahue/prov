@@ -1,10 +1,6 @@
 #!/bin/zsh
 
-#TODO add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
-#TODO make mv handle multiple targets and directories
-#TODO make -h flag call script with cmd as help arg
 #TODO make edit escape backslashes so they dont end up as ctrl chars
-#TODO make the all target create all needed implied directories
 
 function deps() {
 

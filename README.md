@@ -1,13 +1,13 @@
 # deps
 Automatic Makefile generation and dependency management for data processing pipelines from commandline history
 
-deps is a zshell function that contains a collection of useful subcommands for generating and managing makefiles automatically from the commandline history. Useful for datascience projects that involve extended pipelines of exploratory data processing and file manipulation from the command line.
+deps is a zshell function that contains a collection of subcommands for generating and managing makefiles automatically from your commandline history. Useful for datascience projects that involve extended pipelines of exploratory data processing and file manipulation from the command line.
 
 ## Quick Start
 
 First, source the deps file and create a Makefile at the root of your project using `deps init`.
 
-As you create files using standard redirects `echo 'data' > data`, you can add them to the Makefile with the simple command `deps add data`, which searches the history for a redirect to the data file ("> data") and uses that command as the recipe, with dependencies heuristically extracted therefrom. Commands that produce files without using redirects or that otherwise foil the heuristics used by add can be added manually with `deps set`.
+As you create files using standard redirects `echo 'data' > datafile`, you can add them to the Makefile with the simple command `deps add datafile`, which searches the history for a redirect to the data file ("> datafile") and uses that command as the recipe, with dependencies heuristically extracted therefrom. Commands that produce files without using redirects or that otherwise foil the heuristics used by add can be added manually with `deps set`. The `deps set` subcommand accepts Makefile dependencies as arguments  and reads the recipe from stdin. The easiest way use this is to type `deps set dependency1 dependency2 <<'EOF'`, hit enter, then scroll up through your command history to find the command you want to use as the recipe, hit enter again, and type `EOF` again to complete the heredoc.
 
 When you inevitably discover, 42 steps into your analysis, that there was a formatting error in your original data file, you can now simply correct it and run `make` to rebuild all the subsequent files you have tracked using deps.
 
@@ -26,14 +26,7 @@ less  - Opens the Makefile in less.
 mv SOURCE DEST - Moves a file with mv and updates the Makefile accordingly.
 rm TARGET - Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 set TARGET [DEPENDENCY...] - Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
-status  - Prints all files in Makefile directory not managed by Makefile.
 unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 ```
 ## TODO
-- import asv help system and todo exporter
-- implement status
-- add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
-- make mv handle multiple targets and directories
-- make -h flag call script with cmd as help arg
 - make edit escape backslashes so they dont end up as ctrl chars
-- make the all target create all needed implied directories

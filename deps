@@ -95,14 +95,14 @@ function deps() {
 	    ;;
 	
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-	    mv -i "$1" "$2"	    
+	    mv -i "$@"
 	    local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
-	    local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
+	    local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[-1]}")
 	    if [[ -d "$2" ]]; then
 		echo 'dir'
 	    else
-		"$0" unset "$b"
-		echo "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" 1>&2
+		"$0" unset "$b" #Delete overwritten recipe if it exists.
+		#echo "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" 1>&2
 		sed -i "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" "$MAKEFILE"
 	    fi	    
 	    ;;

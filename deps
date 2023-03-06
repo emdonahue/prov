@@ -96,20 +96,16 @@ function deps() {
 	    ;;
 
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-	    echo "mv $@" 1>&2
 	    if [[ -d "${@[-1]}" ]]; then
-		echo 'dir' 1>&2
 		for f in "${@[1,-2]}"; do
 		    "$0" mv "$f" "${@[-1]}/$(basename $f)"
 		done
 	    else
 		mv -i "$@"
-		local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[1,-2]}")
-		local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[-1]}")
-
-		"$0" unset "$b" #Delete overwritten recipe if it exists.
-		#echo "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" 1>&2
-		sed -i "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" "$MAKEFILE"
+		local SRC=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
+		local DEST=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
+		"$0" unset "$DEST" #Delete overwritten recipe if it exists.
+		sed -i "s${US}\\(^\\|[>< ]\\)$SRC\\([><:/ ]\\|$\\)${US}\\1$DEST\\2${US}g" "$MAKEFILE"
 	    fi
 	    ;;
 

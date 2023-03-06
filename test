@@ -77,7 +77,6 @@ cd subdir
 "$DEPS" mv ../b ../a
 assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv relpath recipe remove' "$("$DEPS" echo ../b)" "No recipe for ../b found in $DIR/Makefile"
-ls ../*
 "$DEPS" mv ../a .
 [[ -f a ]]
 assert 'mv to dir' $? 0

@@ -102,7 +102,8 @@ function deps() {
 		echo 'dir'
 	    else
 		"$0" unset "$b"
-		sed -i "s${US}\(^\|[>< ]\)$a\([><: ]\|$\)${US}\1$b\2${US}g" "$MAKEFILE"
+		echo "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" 1>&2
+		sed -i "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" "$MAKEFILE"
 	    fi	    
 	    ;;
 

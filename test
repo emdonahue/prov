@@ -69,19 +69,19 @@ touch a
 "$DEPS" mv a b
 [[ -f b ]]
 assert 'mv file' $? 0
-assert 'mv recipe' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
 assert 'mv recipe' "$("$DEPS" echo b)" "$(echo 'b: \n\ttouch b')"
+assert 'mv recipe remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
 touch subdir/a
 "$DEPS" set subdir/a <<< 'touch subdir/a'
 "$DEPS" mv subdir/a subdir/b
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
 assert 'mv subdir recipe' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
-assert 'mv subdir recipe' "$("$DEPS" echo subdir/a)" "No recipe for subdir/a found in $DIR/Makefile"
+assert 'mv subdir recipe remove' "$("$DEPS" echo subdir/a)" "No recipe for subdir/a found in $DIR/Makefile"
 cd subdir
 "$DEPS" mv ../b ../a
 assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
-assert 'mv subdir recipe' "$("$DEPS" echo ../b)" "No recipe for ../b found in $DIR/Makefile"
+assert 'mv relpath recipe remove' "$("$DEPS" echo ../b)" "No recipe for ../b found in $DIR/Makefile"
 "$DEPS" mv ../a .
 [[ -f a ]]
 assert 'mv to dir' $? 0

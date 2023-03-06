@@ -1,7 +1,5 @@
 #!/bin/zsh
 
-#TODO import asv help system and todo exporter
-#TODO implement status
 #TODO add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
 #TODO make mv handle multiple targets and directories
 #TODO make -h flag call script with cmd as help arg
@@ -75,9 +73,9 @@ function deps() {
 	    print -z "$("$0" echo "$1" | tail -n -2 | sed -E 's/^\s*//')"
 	    ;;
 
-	--help|-h|help) #[SUBCOMMAND], Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	--help|-h|help) #[SUBCOMMAND], Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	    echo "grepping: $(realpath -s $0)"
-	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	    ;;
 
@@ -85,7 +83,7 @@ function deps() {
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh -i' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -v -e "^all$$" -e "^clean$$" -e "^\.PHONY$$")' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs -0 -n1 dirname -z | xargs -0 -n1 mkdir -p) | tr "\0" " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile
@@ -120,10 +118,6 @@ function deps() {
 	    shift
 	    echo "$@" >> "$MAKEFILE"
 	    <&0 sed -e 's/^/\t/' -e 's/\$/$$/g' >> "$MAKEFILE"
-	    ;;
-
-	status) #, Prints all files in Makefile directory not managed by Makefile.
-	    echo 'Not yet implemented' && return 1
 	    ;;
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.

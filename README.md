@@ -1,5 +1,5 @@
 # deps
-Automatic Makefile generation and dependency management for data processing pipelines from command line history
+Automatic Makefile generation and dependency management for data processing pipelines from commandline history
 
 deps is a zshell function that contains a collection of useful subcommands for generating and managing makefiles automatically from the commandline history. Useful for datascience projects that involve extended pipelines of exploratory data processing and file manipulation from the command line.
 
@@ -20,7 +20,7 @@ add [FILE...] - Heuristically scans history for recipe that created FILE and add
 comment TARGET [COMMENT] - Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
 echo TARGET - Echoes the recipe for TARGET
 edit TARGET - Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
---help|-h|help [SUBCOMMAND] - Prints help text for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+--help|-h|help [SUBCOMMAND] - Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 init  - Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 less  - Opens the Makefile in less.
 mv SOURCE DEST - Moves a file with mv and updates the Makefile accordingly.
@@ -29,3 +29,11 @@ set TARGET [DEPENDENCY...] - Creates a new recipe for TARGET using DEPENDENCY an
 status  - Prints all files in Makefile directory not managed by Makefile.
 unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 ```
+## TODO
+- import asv help system and todo exporter
+- implement status
+- add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
+- make mv handle multiple targets and directories
+- make -h flag call script with cmd as help arg
+- make edit escape backslashes so they dont end up as ctrl chars
+- make the all target create all needed implied directories

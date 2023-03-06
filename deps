@@ -6,13 +6,14 @@
 #TODO make mv handle multiple targets and directories
 #TODO make -h flag call script with cmd as help arg
 #TODO make edit escape backslashes so they dont end up as ctrl chars
+#TODO make the all target create all needed implied directories
 
-function deps() {    
+function deps() {
 
     local US=$'\037'
-    
+
     setopt extendedglob
-    
+
     local CMD="$1"
     [[ $# -ne 0 ]] && shift
 
@@ -20,7 +21,7 @@ function deps() {
     case "$CMD" in
 	-h|--help|help|init);;
 	*)
-	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null	    
+	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
 	    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && return 1
 	    ;;
     esac
@@ -36,7 +37,7 @@ function deps() {
 		else
 		    local -U DEPENDENCIES=()
 		    local IFS=$IFS')(><|'
-		    for D in "${=RECIPE}"; do			
+		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$1" ]]; then
 			    RECIPE=$(sed -E "s|\b$D\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")|g"<<< "$RECIPE")
 			    DEPENDENCIES+=("$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")")
@@ -52,7 +53,7 @@ function deps() {
 
 	comment) #TARGET [COMMENT], Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
 	    if [[ $# -eq 0 ]]; then
-		"$0" help "$CMD" 1>&2 && return 1		
+		"$0" help "$CMD" 1>&2 && return 1
 	    elif [[ $# -eq 1 ]]; then
 		grep -E '^'"$1"':' "$MAKEFILE" | grep -q '#' || return 1
 		grep -E '^'"$1"':' "$MAKEFILE" | sed -E 's/[^#]*#(.*)/\1/'
@@ -69,7 +70,7 @@ function deps() {
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
 	    echo "$RECIPE"
 	    ;;
-	
+
 	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
 	    print -z "$("$0" echo "$1" | tail -n -2 | sed -E 's/^\s*//')"
 	    ;;
@@ -79,7 +80,7 @@ function deps() {
 	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from command line history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
 	    ;;
-	
+
 	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh -i' >> Makefile
@@ -93,24 +94,29 @@ function deps() {
 	less) #, Opens the Makefile in less.
 	    less "$MAKEFILE"
 	    ;;
-	
+
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-	    mv -i "$@"
-	    local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
-	    local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[-1]}")
-	    if [[ -d "$2" ]]; then
-		echo 'dir'
+	    echo "mv $@" 1>&2
+	    if [[ -d "${@[-1]}" ]]; then
+		echo 'dir' 1>&2
+		for f in "${@[1,-2]}"; do
+		    "$0" mv "$f" "${@[-1]}/$(basename $f)"
+		done
 	    else
+		mv -i "$@"
+		local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[1,-2]}")
+		local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "${@[-1]}")
+
 		"$0" unset "$b" #Delete overwritten recipe if it exists.
 		#echo "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" 1>&2
 		sed -i "s${US}\\(^\\|[>< ]\\)$a\\([><: ]\\|$\\)${US}\\1$b\\2${US}g" "$MAKEFILE"
-	    fi	    
+	    fi
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 	    "$0" unset "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")"
 	    rm -f "$1"
-	    ;; 
+	    ;;
 
 	set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
     	    "$0" unset "$1"
@@ -123,7 +129,7 @@ function deps() {
 	status) #, Prints all files in Makefile directory not managed by Makefile.
 	    echo 'Not yet implemented' && return 1
 	    ;;
-	
+
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
 	    ;;

@@ -20,11 +20,6 @@ trap "rm -rf $DIR" EXIT
 mkdir "$DIR/subdir"
 cd "$DIR"
 
-#"$DEPS" init
-#"$DEPS" set a <<< 'touch a'
-#"$DEPS" mv a b
-#exit
-
 #init
 "$DEPS" init
 [[ -f Makefile ]]
@@ -82,11 +77,21 @@ cd subdir
 "$DEPS" mv ../b ../a
 assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv relpath recipe remove' "$("$DEPS" echo ../b)" "No recipe for ../b found in $DIR/Makefile"
+ls ../*
 "$DEPS" mv ../a .
 [[ -f a ]]
 assert 'mv to dir' $? 0
 assert 'mv to dir recipe' "$("$DEPS" echo a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
 assert 'mv to dir recipe remove' "$("$DEPS" echo ../a)" "No recipe for ../a found in $DIR/Makefile"
+"$DEPS" mv a b ..
+[[ -f ../a ]]
+assert 'mv multiple' $? 0
+[[ -f ../b ]]
+assert 'mv multiple' $? 0
+assert 'mv multiple recipe a' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
+assert 'mv multiple recipe b' "$("$DEPS" echo ../b)" "$(echo 'b: \n\ttouch b')"
+assert 'mv multiple recipe a remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
+assert 'mv multiple recipe b remove' "$("$DEPS" echo b)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #add

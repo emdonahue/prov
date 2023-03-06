@@ -1,12 +1,16 @@
 #!/bin/zsh
 
+#TODO import asv help system and todo exporter
 #TODO implement status
 #TODO add a phony dirstructure target that scans all recipes and builds all dirs. all should depend on it. or maybe all should just build dirs
 #TODO make mv handle multiple targets and directories
 #TODO make -h flag call script with cmd as help arg
+#TODO make edit escape backslashes so they dont end up as ctrl chars
 
-function deps() {
+function deps() {    
 
+    local US=$'\037'
+    
     setopt extendedglob
     
     local CMD="$1"
@@ -91,10 +95,15 @@ function deps() {
 	    ;;
 	
 	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
-	    mv -i "$1" "$2"
+	    mv -i "$1" "$2"	    
 	    local a=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
 	    local b=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
-	    sed -i "s/\b${a:gs_/_\\/_}\b/${b:gs_/_\\/_}/g" "$MAKEFILE"
+	    if [[ -d "$2" ]]; then
+		echo 'dir'
+	    else
+		"$0" unset "$b"
+		sed -i "s${US}\\b$a\\b${US}$b${US}g" "$MAKEFILE"
+	    fi	    
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.

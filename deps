@@ -5,6 +5,7 @@
 function deps() {
 
     local US=$'\037'
+    local SEDFILENAME="s${US}\\(^\\|[>< ]\\)SRC\\([><:/ ]\\|$\\)${US}\\1DEST\\2${US}g"
 
     setopt extendedglob
 
@@ -45,9 +46,7 @@ function deps() {
 			    DEPENDENCIES+=("$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")")
 			fi
 		    done
-		    RECIPE=$(sed "s${US}\\(^\\|[>< ]\\)$f\\([><:/ ]\\|$\\)${US}\\1$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")\\2${US}g"<<< "$RECIPE")
-		    
-		    #RECIPE=$(sed -E "s|\\b$f\\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
+		    RECIPE=$(sed ${${SEDFILENAME/SRC/"$f"}/DEST/"$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")"} <<< "$RECIPE")
 		    #echo "FINAL RECIPE: $RECIPE" >&2
 		    "$0" set "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
@@ -108,7 +107,7 @@ function deps() {
 		local SRC=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
 		local DEST=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
 		"$0" unset "$DEST" #Delete overwritten recipe if it exists.
-		sed -i "s${US}\\(^\\|[>< ]\\)$SRC\\([><:/ ]\\|$\\)${US}\\1$DEST\\2${US}g" "$MAKEFILE"
+		sed -i ${${SEDFILENAME/SRC/"$SRC"}/DEST/"$DEST"} "$MAKEFILE"
 	    fi
 	    ;;
 

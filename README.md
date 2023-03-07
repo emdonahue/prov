@@ -16,17 +16,19 @@ See the documentation section for a complete list of utility commands for managi
 ## Documentation
 
 ```
+--help|-h|help [SUBCOMMAND] - Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 add [FILE...] - Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
 comment TARGET [COMMENT] - Sets or prints a short comment associated with the recipe for TARGET. Useful for quick notes annotating generated files. If COMMENT is present, set the comment, otherwise print.
+cp SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST - modifying their mutual dependencies to point to the new copies within a given cp command.
 echo TARGET - Echoes the recipe for TARGET
 edit TARGET - Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
---help|-h|help [SUBCOMMAND] - Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 init  - Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 less  - Opens the Makefile in less.
-mv SOURCE DEST - Moves a file with mv and updates the Makefile accordingly.
+mv SOURCE... DEST - Moves a file with mv and updates the Makefile accordingly.
 rm TARGET - Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 set TARGET [DEPENDENCY...] - Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
 unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 ```
 ## TODO
 - make edit escape backslashes so they dont end up as ctrl chars
+- escape sed patterns

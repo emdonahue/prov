@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 #TODO make edit escape backslashes so they dont end up as ctrl chars
-#TODO write general sed escape program for composing strings/files with sed program text. sed bre: $.*[\^
+#TODO escape sed patterns
 
 function deps() {
 

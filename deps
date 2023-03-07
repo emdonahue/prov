@@ -1,11 +1,12 @@
 #!/bin/zsh
 
 #TODO make edit escape backslashes so they dont end up as ctrl chars
+#TODO write general sed escape program for composing strings/files with sed program text. sed bre: $.*[\^
 
 function deps() {
 
     local US=$'\037'
-    local SEDFILENAME="s${US}\\(^\\|[>< ]\\)SRC\\([><:/ ]\\|$\\)${US}\\1DEST\\2${US}g"
+    local SEDFILENAME="s${US}"'\(^\|[>< ]\)SRC\([><:/ ]\|$\)'"${US}"'\1DEST\2'"${US}g"
 
     setopt extendedglob
 
@@ -65,6 +66,10 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
+	    #awk "/^${t:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+	    #echo "/^$1:/,/^[^\t]/ {/^($1:|\t)/p}"
+	    #echo -E $(for f in "${@[1,-2]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)
+	    #sed  "$MAKEFILE"
 	    
 	    ;;
 	

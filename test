@@ -136,5 +136,13 @@ assert 'dependency comment' "$("$DEPS" comment a)" 'test comment'
 assert 'dependency comment revision' "$("$DEPS" comment a)" 'revised comment'
 teardown
 
+#cp
+"$DEPS" init
+touch a b
+"$DEPS" set a <<< 'touch a'
+"$DEPS" set b a <<< 'cat a > b'
+"$DEPS" cp a b subdir
+teardown
+
 [[ -z "$ERR" ]] && echo "All Tests Pass"
 exit "$ERR"

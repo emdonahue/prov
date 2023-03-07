@@ -30,19 +30,25 @@ function deps() {
 
 	add) #[FILE...], Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
 	    for f in "$@"; do
+		#echo "PROCESSING TARGET: $f" >&2
 		local RECIPE=$(fc -nrl -1000 | grep -E ">\|?\s*$f([ )(><|]+|$)" | head -n1)
+		#echo "RAW RECIPE: $RECIPE" >&2
 		if [[ -z "$RECIPE" ]]; then
 		    echo "No recipe found for $f" >&2
 		else
 		    local -U DEPENDENCIES=()
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
-			if [[ -f "$D" && "$D" != "$1" ]]; then
+			if [[ -f "$D" && "$D" != "$f" ]]; then
+			    #echo "ADDING DEPENDENCY: $D" >&2
 			    RECIPE=$(sed -E "s|\b$D\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")|g"<<< "$RECIPE")
 			    DEPENDENCIES+=("$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")")
 			fi
 		    done
-		    RECIPE=$(sed -E "s|\b$f\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
+		    RECIPE=$(sed "s${US}\\(^\\|[>< ]\\)$f\\([><:/ ]\\|$\\)${US}\\1$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")\\2${US}g"<<< "$RECIPE")
+		    
+		    #RECIPE=$(sed -E "s|\\b$f\\b|$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")|g"<<< "$RECIPE")
+		    #echo "FINAL RECIPE: $RECIPE" >&2
 		    "$0" set "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"

@@ -114,6 +114,11 @@ touch a
 touch b
 "$DEPS" add b > /dev/null
 assert 'add subdir' "$("$DEPS" echo b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
+print -S 'echo "a" > a'
+print -S 'echo "a" > ../a'
+"$DEPS" add ../a a > /dev/null
+assert 'add multiple' "$("$DEPS" echo a)" "$(echo 'subdir/a: \n\techo "a" > subdir/a')"
+assert 'add multiple 2' "$("$DEPS" echo ../a)" "$(echo 'a: \n\techo "a" > a')"
 teardown
 
 #comment

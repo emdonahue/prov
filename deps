@@ -7,6 +7,8 @@ function deps() {
 
     local US=$'\037'
     local SEDFILENAME="s${US}"'\(^\|[>< ]\)SRC\([><:/ ]\|$\)'"${US}"'\1DEST\2'"${US}g"
+    local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
+    local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
     setopt extendedglob
 
@@ -21,6 +23,8 @@ function deps() {
 	    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && return 1
 	    ;;
     esac
+
+    local MAKEDIR="$(dirname "$MAKEFILE")"
 
     # Parse the main subcommand
     case "$CMD" in
@@ -40,12 +44,12 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(sed ${${SEDFILENAME/SRC/"$D"}/DEST/"$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")"} <<< "$RECIPE")
-			    DEPENDENCIES+=("$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$D")")
+			    RECIPE=$(sed ${${SEDFILENAME/SRC/"$D"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$D")"} <<< "$RECIPE")
+			    DEPENDENCIES+=("$(realpath -s --relative-to="$MAKEDIR" "$D")")
 			fi
 		    done
-		    RECIPE=$(sed ${${SEDFILENAME/SRC/"$f"}/DEST/"$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")"} <<< "$RECIPE")
-		    "$0" set "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$f")" "$DEPENDENCIES" <<< "$RECIPE"
+		    RECIPE=$(sed ${${SEDFILENAME/SRC/"$f"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$f")"} <<< "$RECIPE")
+		    "$0" set "$(realpath -s --relative-to="$MAKEDIR" "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"
 		fi
@@ -66,16 +70,18 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
-	    #awk "/^${t:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
-	    #echo "/^$1:/,/^[^\t]/ {/^($1:|\t)/p}"
-	    #echo -E $(for f in "${@[1,-2]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)
-	    #sed  "$MAKEFILE"
+	    #TODO switch sed delimeter to US
+	    #TODO realpath files around makefile
+	    local FILES="$(find "${@[1,-2]}" -type f -print0 | xargs -0 -n1 realpath -s --relative-to="$MAKEDIR")"
+	    echo $FILES
+	    sed -n "$(for f in "${@[1,-2]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${@[1,-2]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)"
+	    echo -E $(for f in "${@[1,-2]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)
 	    
 	    ;;
 	
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(grep -EA1 "^$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
+	    local RECIPE=$(grep -EA1 "^$(realpath -s --relative-to="$MAKEDIR" "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" && return 1
 	    echo "$RECIPE"
 	    ;;
@@ -105,15 +111,15 @@ function deps() {
 		done
 	    else
 		mv -i "$@"
-		local SRC=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")
-		local DEST=$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$2")
+		local SRC=$(realpath -s --relative-to="$MAKEDIR" "$1")
+		local DEST=$(realpath -s --relative-to="$MAKEDIR" "$2")
 		"$0" unset "$DEST" #Delete overwritten recipe if it exists.
 		sed -i ${${SEDFILENAME/SRC/"$SRC"}/DEST/"$DEST"} "$MAKEFILE"
 	    fi
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-	    "$0" unset "$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1")"
+	    "$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$1")"
 	    rm -f "$1"
 	    ;;
 

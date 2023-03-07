@@ -70,17 +70,10 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
-	    #TODO switch sed delimeter to US
-	    #TODO realpath files around makefile
-	    if [[ -d "${@[-1]}" ]]; then
-		cp -ir "$@"
-		local SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
-		#echo "src: *$SRCFILES* ${#SRCFILES}"
-		#local DESTFILES=("blah/"${^${${(@0):-$(basename -za "${SRCFILES[@]}")}[1,-2]}})
-		#echo "dest: $DESTFILES"
-		sed -n "$(for f in "${SRCFILES[@]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)" >> "$MAKEFILE"
-	    fi
-	    
+	    cp -ir "$@"
+	    local CP_SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})	    
+	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi
+	    sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< "${@[-1]}${CP_BASENAME-/$(basename $f)}")"};"; done)" >> "$MAKEFILE"	    
 	    ;;
 	
 	echo) #TARGET, Echoes the recipe for TARGET

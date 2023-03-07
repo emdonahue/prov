@@ -145,6 +145,10 @@ touch a b
 assert 'cp' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
 assert 'cp src preserved' "$("$DEPS" echo a)" "$(echo 'a: \n\ttouch a')"
 assert 'cp dependencies' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
+rm subdir/b
+"$DEPS" unset subdir/b
+"$DEPS" cp b subdir/b
+assert 'cp file' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: a\n\tcat a > subdir/b')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

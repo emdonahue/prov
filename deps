@@ -22,6 +22,11 @@ function deps() {
 
     # Parse the main subcommand
     case "$CMD" in
+	--help|-h|help) #[SUBCOMMAND], Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
+	    echo "grepping: $(realpath -s $0)"
+	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
+	    ;;
 
 	add) #[FILE...], Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
 	    for f in "$@"; do
@@ -58,6 +63,10 @@ function deps() {
 	    fi
 	    ;;
 
+	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
+	    
+	    ;;
+	
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
 	    local RECIPE=$(grep -EA1 "^$(realpath -s --relative-to=$(dirname "$MAKEFILE") "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
@@ -67,19 +76,13 @@ function deps() {
 
 	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
 	    print -z "$("$0" echo "$1" | tail -n -2 | sed -E 's/^\s*//')"
-	    ;;
-
-	--help|-h|help) #[SUBCOMMAND], Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	    echo "grepping: $(realpath -s $0)"
-	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
-	    ;;
+	    ;;	
 
 	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh -i' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs -0 -n1 dirname -z | xargs -0 -n1 mkdir -p) | tr "\0" " ")' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs -0 -n1 dirname -z | xargs -0 -n1 mkdir -p) | tr "\\0" " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile
@@ -89,7 +92,7 @@ function deps() {
 	    less "$MAKEFILE"
 	    ;;
 
-	mv) #SOURCE DEST, Moves a file with mv and updates the Makefile accordingly.
+	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.
 	    if [[ -d "${@[-1]}" ]]; then
 		for f in "${@[1,-2]}"; do
 		    "$0" mv "$f" "${@[-1]}/$(basename $f)"
@@ -117,7 +120,9 @@ function deps() {
 	    ;;
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
-	    awk -i inplace "/^${1:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+	    for t in "$@"; do
+		awk -i inplace "/^${t:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+	    done
 	    ;;
 
 	*)

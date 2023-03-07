@@ -72,10 +72,14 @@ function deps() {
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
 	    #TODO switch sed delimeter to US
 	    #TODO realpath files around makefile
-	    local FILES="$(find "${@[1,-2]}" -type f -print0 | xargs -0 -n1 realpath -s --relative-to="$MAKEDIR")"
-	    echo $FILES
-	    sed -n "$(for f in "${@[1,-2]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${@[1,-2]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)"
-	    echo -E $(for f in "${@[1,-2]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)
+	    if [[ -d "${@[-1]}" ]]; then
+		cp -ir "$@"
+		local SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
+		#echo "src: *$SRCFILES* ${#SRCFILES}"
+		#local DESTFILES=("blah/"${^${${(@0):-$(basename -za "${SRCFILES[@]}")}[1,-2]}})
+		#echo "dest: $DESTFILES"
+		sed -n "$(for f in "${SRCFILES[@]}"; do echo -En "/^$f"':/,/^[^\t]/ {/^'"$f"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$f"}/DEST/"${@[-1]}/$(basename $f)"};"; done)" >> "$MAKEFILE"
+	    fi
 	    
 	    ;;
 	

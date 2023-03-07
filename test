@@ -142,6 +142,9 @@ touch a b
 "$DEPS" set a <<< 'touch a'
 "$DEPS" set b a <<< 'cat a > b'
 "$DEPS" cp a b subdir
+assert 'cp' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
+assert 'cp src preserved' "$("$DEPS" echo a)" "$(echo 'a: \n\ttouch a')"
+assert 'cp dependencies' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

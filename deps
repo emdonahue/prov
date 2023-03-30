@@ -59,12 +59,9 @@ function deps() {
 	    if [[ $# -eq 0 ]]; then
 		"$0" help "$CMD" 1>&2 && return 1
 	    elif [[ $# -eq 1 ]]; then
-		grep -E '^'"$1"':' "$MAKEFILE" | grep -q '#' || return 1
-		grep -E '^'"$1"':' "$MAKEFILE" | sed -E 's/[^#]*#(.*)/\1/'
+		getfattr -n user.prov.comment "$1" | sed -En 's/^user.prov.comment="(.*)"$/\1/p'
 	    else
-		local TARGET="${1:gs_/_\\/_}"
-		shift
-		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1#${*}/" "$MAKEFILE"
+		setfattr -n user.prov.comment -v "${${@:2}[*]}" "$1"
 	    fi
 	    ;;
 

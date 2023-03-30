@@ -19,7 +19,7 @@ function deps() {
     case "$CMD" in
 	-h|--help|help|init|'');;
 	*)
-	    local MAKEFILE=$(print -l (../)#Makefile(:a) | head -n1) 2>/dev/null
+	    local MAKEFILE=$(DIR=$(pwd); while [[ -n "$DIR" && ! -f "$DIR/Makefile" ]]; do DIR="${DIR%/*}"; done; echo "${DIR}/Makefile")
 	    [[ ! -f "$MAKEFILE" ]] && echo "Makefile not found. Use $(basename "$0") init." 1>&2 && return 1
 	    ;;
     esac

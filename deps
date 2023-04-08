@@ -10,6 +10,10 @@ function deps() {
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
+    function deps__replace_filename() { #OLD NEW (recipe on stdin)
+	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$2")"}
+    }
+    
     setopt extendedglob
 
     local CMD="$1"
@@ -43,11 +47,11 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$D")"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$D" | sed "$SEDREPLACEMENT")"} <<< "$RECIPE")
+			    RECIPE=$(deps__replace_filename "$D" "$(realpath -s --relative-to="$MAKEDIR" "$D")" <<< "$RECIPE") 
 			    DEPENDENCIES+=("$(realpath -s --relative-to="$MAKEDIR" "$D")")
 			fi
 		    done
-		    RECIPE=$(sed ${${SEDFILENAME/SRC/"$f"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$f")"} <<< "$RECIPE")
+		    RECIPE=$(deps__replace_filename "$f" "$(realpath -s --relative-to="$MAKEDIR" "$f")" <<< "$RECIPE")
 		    "$0" set "$(realpath -s --relative-to="$MAKEDIR" "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"

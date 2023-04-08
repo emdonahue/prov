@@ -6,7 +6,7 @@
 function deps() {
 
     local US=$'\037'
-    local SEDFILENAME="s${US}"'\(^\|[>< ]\)SRC\([><:/ ]\|$\)'"${US}"'\1DEST\2'"${US}g"
+    local SEDFILENAME="s${US}"'\(^\|[><| ]\)SRC\([><:/| ]\|$\)'"${US}"'\1DEST\2'"${US}g"
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
@@ -43,7 +43,7 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(sed ${${SEDFILENAME/SRC/"$D"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$D")"} <<< "$RECIPE")
+			    RECIPE=$(sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$D")"}/DEST/"$(realpath -s --relative-to="$MAKEDIR" "$D" | sed "$SEDREPLACEMENT")"} <<< "$RECIPE")
 			    DEPENDENCIES+=("$(realpath -s --relative-to="$MAKEDIR" "$D")")
 			fi
 		    done

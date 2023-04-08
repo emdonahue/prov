@@ -115,8 +115,10 @@ function deps() {
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
-	    "$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$1")"
-	    rm -f "$1"
+	    for f in "$@"; do
+		"$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$f")"
+	    done
+	    rm -f "$@"
 	    ;;
 
 	set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.

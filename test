@@ -57,6 +57,15 @@ cd subdir
 "$DEPS" set a <<< 'touch a'
 "$DEPS" rm ../a
 assert 'rm relpath' "$(grep -EA1 '^a' ../Makefile)" ''
+cd ..
+"$DEPS" set a <<< 'touch a'
+"$DEPS" set b <<< 'touch b'
+touch a b
+"$DEPS" rm a b
+[[ ! -f a ]] || assert 'rm multi a' 1
+[[ ! -f b ]] || assert 'rm multi b' 1
+assert 'rm multi a recipe' "$(grep -EA1 '^a' Makefile)" ''
+assert 'rm multi b recipe' "$(grep -EA1 '^b' Makefile)" ''
 teardown
 
 #mv

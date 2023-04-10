@@ -158,6 +158,7 @@ rm subdir/b
 "$DEPS" unset subdir/b
 "$DEPS" cp b subdir/b
 assert 'cp file' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: a\n\tcat a > subdir/b')"
+mkdir subdir2
 cd subdir
 "$DEPS" cp b ../subdir2
 assert 'cp realpath dest' "$("$DEPS" echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"

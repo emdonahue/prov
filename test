@@ -13,7 +13,7 @@ function teardown() {
     cd "$DIR"
     rm -f Makefile a b subdir/a subdir/b subdir2/a subdir2/b
     mkdir -p subdir
-    rmdir subdir2 2>/dev/null    
+    rmdir subdir2 2>/dev/null
 }
 
 DEPS=deps

@@ -64,10 +64,9 @@ function deps() {
 	    if [[ $# -eq 0 ]]; then
 		"$0" help "$CMD" 1>&2 && return 1
 	    elif [[ $# -eq 1 ]]; then
-		grep -E '^'"$1"':' "$MAKEFILE" | grep -q '#' || return 1
-		grep -E '^'"$1"':' "$MAKEFILE" | sed -E 's/[^#]*#(.*)/\1/'
+		grep -E '^'"$(realpath -s --relative-to="$MAKEDIR" "$1")"':' "$MAKEFILE" | sed -E 's/^[^#]*#?//'
 	    else
-		local TARGET="${1:gs_/_\\/_}"
+		local TARGET="${$(realpath -s --relative-to="$MAKEDIR" "$1"):gs_/_\\/_}"
 		shift
 		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1#${*}/" "$MAKEFILE"
 	    fi

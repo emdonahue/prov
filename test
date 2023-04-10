@@ -143,6 +143,8 @@ assert 'blank comment' "$("$DEPS" comment a)" ''
 assert 'dependency comment' "$("$DEPS" comment a)" 'test comment'
 "$DEPS" comment a revised comment
 assert 'dependency comment revision' "$("$DEPS" comment a)" 'revised comment'
+cd subdir
+assert 'comment relative path' "$("$DEPS" comment ../a)" 'revised comment'
 teardown
 
 #cp

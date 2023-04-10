@@ -2,6 +2,7 @@
 
 #TODO make edit escape backslashes so they dont end up as ctrl chars
 #TODO escape sed patterns
+#TODO make add with no arguments accept recipe on stdin
 
 function deps() {
 
@@ -87,14 +88,14 @@ function deps() {
 	    ;;
 
 	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	    print -z "$("$0" echo "$1" | tail -n -2 | sed -E 's/^\s*//')"
+	    print -z "$("$0" echo "$1" | tail -n +2 | sed -E 's/^\s*//')"
 	    ;;
 
 	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh -i' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs -0 -n1 dirname -z | xargs -0 -n1 mkdir -p) | tr "\\0" " ")' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs dirname -z | xargs -0 mkdir -p) | tr "\\0" " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile

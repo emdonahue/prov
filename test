@@ -76,23 +76,23 @@ touch a
 [[ -f b ]]
 assert 'mv file' $? 0
 assert 'mv recipe' "$("$DEPS" echo b)" "$(echo 'b: \n\ttouch b')"
-assert 'mv recipe remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
+assert 'mv recipe remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 touch subdir/a
 "$DEPS" set subdir/a <<< 'touch subdir/a'
 "$DEPS" mv subdir/a subdir/b
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
 assert 'mv subdir recipe' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
-assert 'mv subdir recipe remove' "$("$DEPS" echo subdir/a)" "No recipe for subdir/a found in $DIR/Makefile"
+assert 'mv subdir recipe remove' "$("$DEPS" echo subdir/a 2>&1)" "No recipe for subdir/a found in $DIR/Makefile"
 cd subdir
 "$DEPS" mv ../b ../a
 assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
-assert 'mv relpath recipe remove' "$("$DEPS" echo ../b)" "No recipe for ../b found in $DIR/Makefile"
+assert 'mv relpath recipe remove' "$("$DEPS" echo ../b 2>&1)" "No recipe for ../b found in $DIR/Makefile"
 "$DEPS" mv ../a .
 [[ -f a ]]
 assert 'mv to dir' $? 0
 assert 'mv to dir recipe' "$("$DEPS" echo a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
-assert 'mv to dir recipe remove' "$("$DEPS" echo ../a)" "No recipe for ../a found in $DIR/Makefile"
+assert 'mv to dir recipe remove' "$("$DEPS" echo ../a 2>&1)" "No recipe for ../a found in $DIR/Makefile"
 "$DEPS" mv a b ..
 [[ -f ../a ]]
 assert 'mv multiple' $? 0
@@ -100,15 +100,15 @@ assert 'mv multiple' $? 0
 assert 'mv multiple' $? 0
 assert 'mv multiple recipe a' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv multiple recipe b' "$("$DEPS" echo ../b)" "$(echo 'b: \n\ttouch b')"
-assert 'mv multiple recipe a remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
-assert 'mv multiple recipe b remove' "$("$DEPS" echo b)" "No recipe for b found in $DIR/Makefile"
+assert 'mv multiple recipe a remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'mv multiple recipe b remove' "$("$DEPS" echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 cd ..
 "$DEPS" mv a b subdir
 "$DEPS" mv subdir subdir2
 assert 'mv dir recipe a' "$("$DEPS" echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch subdir2/a')"
 assert 'mv dir recipe b' "$("$DEPS" echo subdir2/b)" "$(echo 'subdir2/b: \n\ttouch subdir2/b')"
-assert 'mv dir recipe a remove' "$("$DEPS" echo a)" "No recipe for a found in $DIR/Makefile"
-assert 'mv dir recipe b remove' "$("$DEPS" echo b)" "No recipe for b found in $DIR/Makefile"
+assert 'mv dir recipe a remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'mv dir recipe b remove' "$("$DEPS" echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #add
@@ -158,6 +158,9 @@ rm subdir/b
 "$DEPS" unset subdir/b
 "$DEPS" cp b subdir/b
 assert 'cp file' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: a\n\tcat a > subdir/b')"
+cd subdir
+"$DEPS" cp b ../subdir2
+assert 'cp realpath dest' "$("$DEPS" echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

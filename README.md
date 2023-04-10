@@ -32,3 +32,4 @@ unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 ## TODO
 - make edit escape backslashes so they dont end up as ctrl chars
 - escape sed patterns
+- make add with no arguments accept recipe on stdin

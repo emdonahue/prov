@@ -135,7 +135,7 @@ function deps() {
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    for t in "$@"; do
-		awk -i inplace "/^${t:gs_/_\\/_}/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+		awk -i inplace "/^${t:gs_/_\\/_}:/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
 	    done
 	    ;;
 

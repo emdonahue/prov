@@ -11,9 +11,8 @@ function assert() {
 
 function teardown() {
     cd "$DIR"
-    rm -f Makefile a b subdir/a subdir/b subdir2/a subdir2/b
+    rm -rf Makefile a b subdir subdir2
     mkdir -p subdir
-    rmdir subdir2 2>/dev/null
 }
 
 DIR=$(mktemp -d)
@@ -23,8 +22,7 @@ cd "$DIR"
 
 #init
 deps init
-[[ -f Makefile ]]
-assert 'init creation' $? 0
+[[ -f Makefile ]] || assert 'init creation' 1
 deps init 2>/dev/null
 assert 'init already exists' $? 1
 teardown
@@ -48,9 +46,8 @@ deps init
 deps set a <<< 'touch a'
 touch a
 deps rm a
-[[ -f a ]]
 assert 'rm recipe removed' "$(grep -EA1 '^a:' Makefile)" ''
-assert 'rm file removed' $? 0
+[[ ! -f a ]] || assert 'rm file removed' 1
 touch a
 cd subdir
 deps set a <<< 'touch a'
@@ -72,15 +69,13 @@ deps init
 touch a
 deps set a <<< 'touch a'
 deps mv a b
-[[ -f b ]]
-assert 'mv file' $? 0
+[[ -f b ]] || assert 'mv file' 1
 assert 'mv recipe' "$(deps echo b)" "$(echo 'b: \n\ttouch b')"
 assert 'mv recipe remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 touch subdir/a
 deps set subdir/a <<< 'touch subdir/a'
 deps mv subdir/a subdir/b
-[[ -f subdir/b ]]
-assert 'mv subdir file' $? 0
+[[ -f subdir/b ]] || assert 'mv subdir file' 1
 assert 'mv subdir recipe' "$(deps echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
 assert 'mv subdir recipe remove' "$(deps echo subdir/a 2>&1)" "No recipe for subdir/a found in $DIR/Makefile"
 cd subdir
@@ -88,15 +83,12 @@ deps mv ../b ../a
 assert 'mv relpath' "$(deps echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv relpath recipe remove' "$(deps echo ../b 2>&1)" "No recipe for ../b found in $DIR/Makefile"
 deps mv ../a .
-[[ -f a ]]
-assert 'mv to dir' $? 0
+[[ -f a ]] || assert 'mv to dir' 1
 assert 'mv to dir recipe' "$(deps echo a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
 assert 'mv to dir recipe remove' "$(deps echo ../a 2>&1)" "No recipe for ../a found in $DIR/Makefile"
 deps mv a b ..
-[[ -f ../a ]]
-assert 'mv multiple' $? 0
-[[ -f ../b ]]
-assert 'mv multiple' $? 0
+[[ -f ../a ]] || assert 'mv multiple' 1
+[[ -f ../b ]] || assert 'mv multiple' 1
 assert 'mv multiple recipe a' "$(deps echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv multiple recipe b' "$(deps echo ../b)" "$(echo 'b: \n\ttouch b')"
 assert 'mv multiple recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
@@ -108,6 +100,8 @@ assert 'mv dir recipe a' "$(deps echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch 
 assert 'mv dir recipe b' "$(deps echo subdir2/b)" "$(echo 'subdir2/b: \n\ttouch subdir2/b')"
 assert 'mv dir recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
+mkdir subdir
+deps mv subdir2 subdir
 teardown
 
 #add

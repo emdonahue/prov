@@ -34,7 +34,7 @@ assert 'set initial' "$(deps echo a)" "$(echo 'a: \n\ttouch a')"
 deps set a b <<< 'touch b'
 assert 'set reset' "$(deps echo a)" "$(echo 'a: b\n\ttouch b')"
 deps unset a
-assert 'unset' "$(grep -EA1 '^a:' Makefile)" ''
+assert 'unset' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 teardown
 deps init
 deps set subdir/a subdir/b <<< 'cat subdir/b > subdir/a'
@@ -46,13 +46,13 @@ deps init
 deps set a <<< 'touch a'
 touch a
 deps rm a
-assert 'rm recipe removed' "$(grep -EA1 '^a:' Makefile)" ''
+assert 'rm recipe removed' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 [[ ! -f a ]] || assert 'rm file removed' 1
 touch a
 cd subdir
 deps set a <<< 'touch a'
 deps rm ../a
-assert 'rm relpath' "$(grep -EA1 '^a:' ../Makefile)" ''
+assert 'rm relpath' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 cd ..
 deps set a <<< 'touch a'
 deps set b <<< 'touch b'
@@ -60,8 +60,8 @@ touch a b
 deps rm a b
 [[ ! -f a ]] || assert 'rm multi a' 1
 [[ ! -f b ]] || assert 'rm multi b' 1
-assert 'rm multi a recipe' "$(grep -EA1 '^a:' Makefile)" ''
-assert 'rm multi b recipe' "$(grep -EA1 '^b:' Makefile)" ''
+assert 'rm multi a recipe' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'rm multi b recipe' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #mv
@@ -102,6 +102,8 @@ assert 'mv dir recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in 
 assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 mkdir subdir
 deps mv subdir2 subdir
+[[ -f subdir/subdir2/a ]] || assert 'mv nest dir raw mv' 1
+#assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #add

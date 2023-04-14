@@ -53,7 +53,7 @@ cd subdir
 deps set a <<< 'touch a'
 deps rm ../a
 assert 'rm relpath' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
-cd ..
+cd "$DIR"
 deps set a <<< 'touch a'
 deps set b <<< 'touch b'
 touch a b
@@ -93,7 +93,7 @@ assert 'mv multiple recipe a' "$(deps echo ../a)" "$(echo 'a: \n\ttouch a')"
 assert 'mv multiple recipe b' "$(deps echo ../b)" "$(echo 'b: \n\ttouch b')"
 assert 'mv multiple recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 assert 'mv multiple recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
-cd ..
+cd "$DIR"
 deps mv a b subdir
 deps mv subdir subdir2
 assert 'mv dir recipe a' "$(deps echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch subdir2/a')"
@@ -162,6 +162,10 @@ mkdir subdir2
 cd subdir
 deps cp b ../subdir2
 assert 'cp realpath dest' "$(deps echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"
+cd "$DIR"
+deps cp subdir2 subdir
+assert 'cp nested dir' "$(deps echo subdir/subdir2/b)" "$(echo 'subdir/subdir2/b: a\n\tcat a > subdir/subdir2/b')"
+#cat Makefile >&2
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

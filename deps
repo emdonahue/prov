@@ -3,6 +3,7 @@
 #TODO make edit escape backslashes so they dont end up as ctrl chars
 #TODO escape sed patterns
 #TODO make add with no arguments accept recipe on stdin
+#TODO make cp handle directory structures. currently only works for simple, flat cases.
 
 function deps() {
 
@@ -73,6 +74,10 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
+	    # file -> file
+	    # file ... -> dir
+	    # dir ... -> dir
+	    # X file ... file [blocked by cp command]
 	    cp -ir "$@"
 	    local CP_SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
 	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi
@@ -92,7 +97,7 @@ function deps() {
 
 	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
-	    echo 'SHELL=zsh -i' >> Makefile
+	    echo 'SHELL=zsh' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
 	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs dirname -z | xargs -0 mkdir -p) | tr "\\0" " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile

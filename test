@@ -16,155 +16,156 @@ function teardown() {
     rmdir subdir2 2>/dev/null
 }
 
-DEPS=deps
 DIR=$(mktemp -d)
 trap "rm -rf $DIR" EXIT
 mkdir "$DIR/subdir"
 cd "$DIR"
 
 #init
-"$DEPS" init
+deps init
 [[ -f Makefile ]]
 assert 'init creation' $? 0
-"$DEPS" init 2>/dev/null
+deps init 2>/dev/null
 assert 'init already exists' $? 1
 teardown
 
 #set
-"$DEPS" init
-"$DEPS" set a <<< 'touch a'
-assert 'set initial' "$("$DEPS" echo a)" "$(echo 'a: \n\ttouch a')"
-"$DEPS" set a b <<< 'touch b'
-assert 'set reset' "$("$DEPS" echo a)" "$(echo 'a: b\n\ttouch b')"
-"$DEPS" unset a
-assert 'unset' "$(grep -EA1 '^a' Makefile)" ''
+deps init
+deps set a <<< 'touch a'
+assert 'set initial' "$(deps echo a)" "$(echo 'a: \n\ttouch a')"
+deps set a b <<< 'touch b'
+assert 'set reset' "$(deps echo a)" "$(echo 'a: b\n\ttouch b')"
+deps unset a
+assert 'unset' "$(grep -EA1 '^a:' Makefile)" ''
 teardown
-"$DEPS" init
-"$DEPS" set subdir/a subdir/b <<< 'cat subdir/b > subdir/a'
-assert 'echo' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: subdir/b\n\tcat subdir/b > subdir/a')"
+deps init
+deps set subdir/a subdir/b <<< 'cat subdir/b > subdir/a'
+assert 'echo' "$(deps echo subdir/a)" "$(echo 'subdir/a: subdir/b\n\tcat subdir/b > subdir/a')"
 teardown
 
 #rm
-"$DEPS" init
-"$DEPS" set a <<< 'touch a'
+deps init
+deps set a <<< 'touch a'
 touch a
-"$DEPS" rm a
+deps rm a
 [[ -f a ]]
-assert 'rm recipe removed' "$(grep -EA1 '^a' Makefile)" ''
+assert 'rm recipe removed' "$(grep -EA1 '^a:' Makefile)" ''
 assert 'rm file removed' $? 0
 touch a
 cd subdir
-"$DEPS" set a <<< 'touch a'
-"$DEPS" rm ../a
-assert 'rm relpath' "$(grep -EA1 '^a' ../Makefile)" ''
+deps set a <<< 'touch a'
+deps rm ../a
+assert 'rm relpath' "$(grep -EA1 '^a:' ../Makefile)" ''
 cd ..
-"$DEPS" set a <<< 'touch a'
-"$DEPS" set b <<< 'touch b'
+deps set a <<< 'touch a'
+deps set b <<< 'touch b'
 touch a b
-"$DEPS" rm a b
+deps rm a b
 [[ ! -f a ]] || assert 'rm multi a' 1
 [[ ! -f b ]] || assert 'rm multi b' 1
-assert 'rm multi a recipe' "$(grep -EA1 '^a' Makefile)" ''
-assert 'rm multi b recipe' "$(grep -EA1 '^b' Makefile)" ''
+assert 'rm multi a recipe' "$(grep -EA1 '^a:' Makefile)" ''
+assert 'rm multi b recipe' "$(grep -EA1 '^b:' Makefile)" ''
 teardown
 
 #mv
-"$DEPS" init
+deps init
 touch a
-"$DEPS" set a <<< 'touch a'
-"$DEPS" mv a b
+deps set a <<< 'touch a'
+deps mv a b
 [[ -f b ]]
 assert 'mv file' $? 0
-assert 'mv recipe' "$("$DEPS" echo b)" "$(echo 'b: \n\ttouch b')"
-assert 'mv recipe remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'mv recipe' "$(deps echo b)" "$(echo 'b: \n\ttouch b')"
+assert 'mv recipe remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 touch subdir/a
-"$DEPS" set subdir/a <<< 'touch subdir/a'
-"$DEPS" mv subdir/a subdir/b
+deps set subdir/a <<< 'touch subdir/a'
+deps mv subdir/a subdir/b
 [[ -f subdir/b ]]
 assert 'mv subdir file' $? 0
-assert 'mv subdir recipe' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
-assert 'mv subdir recipe remove' "$("$DEPS" echo subdir/a 2>&1)" "No recipe for subdir/a found in $DIR/Makefile"
+assert 'mv subdir recipe' "$(deps echo subdir/b)" "$(echo 'subdir/b: \n\ttouch subdir/b')"
+assert 'mv subdir recipe remove' "$(deps echo subdir/a 2>&1)" "No recipe for subdir/a found in $DIR/Makefile"
 cd subdir
-"$DEPS" mv ../b ../a
-assert 'mv relpath' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
-assert 'mv relpath recipe remove' "$("$DEPS" echo ../b 2>&1)" "No recipe for ../b found in $DIR/Makefile"
-"$DEPS" mv ../a .
+deps mv ../b ../a
+assert 'mv relpath' "$(deps echo ../a)" "$(echo 'a: \n\ttouch a')"
+assert 'mv relpath recipe remove' "$(deps echo ../b 2>&1)" "No recipe for ../b found in $DIR/Makefile"
+deps mv ../a .
 [[ -f a ]]
 assert 'mv to dir' $? 0
-assert 'mv to dir recipe' "$("$DEPS" echo a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
-assert 'mv to dir recipe remove' "$("$DEPS" echo ../a 2>&1)" "No recipe for ../a found in $DIR/Makefile"
-"$DEPS" mv a b ..
+assert 'mv to dir recipe' "$(deps echo a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
+assert 'mv to dir recipe remove' "$(deps echo ../a 2>&1)" "No recipe for ../a found in $DIR/Makefile"
+deps mv a b ..
 [[ -f ../a ]]
 assert 'mv multiple' $? 0
 [[ -f ../b ]]
 assert 'mv multiple' $? 0
-assert 'mv multiple recipe a' "$("$DEPS" echo ../a)" "$(echo 'a: \n\ttouch a')"
-assert 'mv multiple recipe b' "$("$DEPS" echo ../b)" "$(echo 'b: \n\ttouch b')"
-assert 'mv multiple recipe a remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
-assert 'mv multiple recipe b remove' "$("$DEPS" echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
+assert 'mv multiple recipe a' "$(deps echo ../a)" "$(echo 'a: \n\ttouch a')"
+assert 'mv multiple recipe b' "$(deps echo ../b)" "$(echo 'b: \n\ttouch b')"
+assert 'mv multiple recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'mv multiple recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 cd ..
-"$DEPS" mv a b subdir
-"$DEPS" mv subdir subdir2
-assert 'mv dir recipe a' "$("$DEPS" echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch subdir2/a')"
-assert 'mv dir recipe b' "$("$DEPS" echo subdir2/b)" "$(echo 'subdir2/b: \n\ttouch subdir2/b')"
-assert 'mv dir recipe a remove' "$("$DEPS" echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
-assert 'mv dir recipe b remove' "$("$DEPS" echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
+deps mv a b subdir
+deps mv subdir subdir2
+assert 'mv dir recipe a' "$(deps echo subdir2/a)" "$(echo 'subdir2/a: \n\ttouch subdir2/a')"
+assert 'mv dir recipe b' "$(deps echo subdir2/b)" "$(echo 'subdir2/b: \n\ttouch subdir2/b')"
+assert 'mv dir recipe a remove' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
+assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
 teardown
 
 #add
-"$DEPS" init
+deps init
 touch a
 touch b
 print -S 'cat a > b'
-assert 'added msg' "$("$DEPS" add b)" "$(echo "Recipe added to $DIR/Makefile:\nb: a\n\tcat a > b")"
-assert 'add' "$("$DEPS" echo b)" "$(echo 'b: a\n\tcat a > b')"
+assert 'added msg' "$(deps add b)" "$(echo "Recipe added to $DIR/Makefile:\nb: a\n\tcat a > b")"
+assert 'add' "$(deps echo b)" "$(echo 'b: a\n\tcat a > b')"
 cd subdir
 touch a
 touch b
-"$DEPS" add b > /dev/null
-assert 'add subdir' "$("$DEPS" echo b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
+deps add b > /dev/null
+assert 'add subdir' "$(deps echo b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
 print -S 'echo "a" > a'
 print -S 'echo "a" > ../a'
-"$DEPS" add ../a a > /dev/null
-assert 'add multiple' "$("$DEPS" echo a)" "$(echo 'subdir/a: \n\techo "a" > subdir/a')"
-assert 'add multiple 2' "$("$DEPS" echo ../a)" "$(echo 'a: \n\techo "a" > a')"
+deps add ../a a > /dev/null
+assert 'add multiple' "$(deps echo a)" "$(echo 'subdir/a: \n\techo "a" > subdir/a')"
+assert 'add multiple 2' "$(deps echo ../a)" "$(echo 'a: \n\techo "a" > a')"
 teardown
 
 #comment
-"$DEPS" init
-"$DEPS" set a <<< 'touch a'
-"$DEPS" comment a test comment
-assert 'comment' "$("$DEPS" comment a)" 'test comment'
-"$DEPS" comment a revised comment
-assert 'revise comment' "$("$DEPS" comment a)" 'revised comment'
-"$DEPS" set a b <<< 'touch a'
-assert 'blank comment' "$("$DEPS" comment a)" ''
-"$DEPS" comment a test comment
-assert 'dependency comment' "$("$DEPS" comment a)" 'test comment'
-"$DEPS" comment a revised comment
-assert 'dependency comment revision' "$("$DEPS" comment a)" 'revised comment'
+deps init
+deps set a <<< 'touch a'
+deps comment a test comment
+assert 'comment' "$(deps comment a)" 'test comment'
+deps comment a revised comment
+assert 'revise comment' "$(deps comment a)" 'revised comment'
+deps set a b <<< 'touch a'
+assert 'blank comment' "$(deps comment a)" ''
+deps comment a test comment
+assert 'dependency comment' "$(deps comment a)" 'test comment'
+deps comment a revised comment
+assert 'dependency comment revision' "$(deps comment a)" 'revised comment'
 cd subdir
-"$DEPS" comment ../a relative path comment
-assert 'comment relative path' "$("$DEPS" comment ../a)" 'relative path comment'
+deps comment ../a relative path comment
+assert 'comment relative path' "$(deps comment ../a)" 'relative path comment'
 teardown
 
 #cp
-"$DEPS" init
+deps init
 touch a b
-"$DEPS" set a <<< 'touch a'
-"$DEPS" set b a <<< 'cat a > b'
-"$DEPS" cp a b subdir
-assert 'cp' "$("$DEPS" echo subdir/a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
-assert 'cp src preserved' "$("$DEPS" echo a)" "$(echo 'a: \n\ttouch a')"
-assert 'cp dependencies' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
+deps set a <<< 'touch a'
+deps cp a c
+assert 'cp file -> file' "$(deps echo c)" "$(echo 'c: \n\ttouch c')"
+deps set b a <<< 'cat a > b'
+deps cp a b subdir
+assert 'cp' "$(deps echo subdir/a)" "$(echo 'subdir/a: \n\ttouch subdir/a')"
+assert 'cp src preserved' "$(deps echo a)" "$(echo 'a: \n\ttouch a')"
+assert 'cp dependencies' "$(deps echo subdir/b)" "$(echo 'subdir/b: subdir/a\n\tcat subdir/a > subdir/b')"
 rm subdir/b
-"$DEPS" unset subdir/b
-"$DEPS" cp b subdir/b
-assert 'cp file' "$("$DEPS" echo subdir/b)" "$(echo 'subdir/b: a\n\tcat a > subdir/b')"
+deps unset subdir/b
+deps cp b subdir/b
+assert 'cp file' "$(deps echo subdir/b)" "$(echo 'subdir/b: a\n\tcat a > subdir/b')"
 mkdir subdir2
 cd subdir
-"$DEPS" cp b ../subdir2
-assert 'cp realpath dest' "$("$DEPS" echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"
+deps cp b ../subdir2
+assert 'cp realpath dest' "$(deps echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

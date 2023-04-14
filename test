@@ -103,7 +103,7 @@ assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in 
 mkdir subdir
 deps mv subdir2 subdir
 [[ -f subdir/subdir2/a ]] || assert 'mv nest dir raw mv' 1
-#assert 'mv dir recipe b remove' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
+assert 'mv nest dir recipe a' "$(deps echo subdir/subdir2/a)" "$(echo 'subdir/subdir2/a: \n\ttouch subdir/subdir2/a')"
 teardown
 
 #add

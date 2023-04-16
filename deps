@@ -81,8 +81,16 @@ function deps() {
 	    # X file ... file [blocked by cp command]
 	    cp -ir "$@"
 	    local CP_SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
-	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi
+	    if [[ ! -d "${@[-1]}" ]]; then #if not moving into dir, replace full src path with dest
+
+		#local CP_BASENAME=; else unset CP_BASENAME; fi
+	    for f in "${CP_SRCFILES[@]}"; do
+		echo "RECIPE FOR $f:" >&2
+		#sed -n '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};' "$MAKEFILE" >&2
+		sed -n '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {1p;/^\t/n};' "$MAKEFILE" >&2
+	    done
 	    sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename $f)}))"};"; done)" >> "$MAKEFILE"
+	    #sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename $f)}))"};"; done)" >> "$MAKEFILE"
 	    ;;
 
 	echo) #TARGET, Echoes the recipe for TARGET

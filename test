@@ -62,6 +62,13 @@ deps rm a b
 [[ ! -f b ]] || assert 'rm multi b' 1
 assert 'rm multi a recipe' "$(deps echo a 2>&1)" "No recipe for a found in $DIR/Makefile"
 assert 'rm multi b recipe' "$(deps echo b 2>&1)" "No recipe for b found in $DIR/Makefile"
+touch subdir/a subdir/b
+deps set subdir/a <<< 'touch subdir/a'
+deps set subdir/b <<< 'touch subdir/b'
+deps rm subdir
+[[ ! -d subdir ]] || assert 'rm dir' 1
+assert 'rm dir a' "$(deps echo subdir/a 2>&1)" "No recipe for subdir/a found in $DIR/Makefile"
+assert 'rm dir b' "$(deps echo subdir/b 2>&1)" "No recipe for subdir/b found in $DIR/Makefile"
 teardown
 
 #mv

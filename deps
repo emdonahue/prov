@@ -14,18 +14,19 @@ function deps() {
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
     function deps__path() {
-	realpath -s --relative-to="$MAKEDIR" "$1"
+	realpath -ms --relative-to="$MAKEDIR" "$1"
     }
-    
+
     function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin)
 	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"}
     }
 
-    function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES
+    function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES DELETE_RECIPE
 	local FNAME=$(sed $SEDPATTERN <<< "$1")
-	sed -n '/^'"$FNAME"'[:'${2:+/}']/,/^[^\t]/ {/^'"$FNAME"'[:'${2:+/}']\|^\t/p};' "$MAKEFILE"
+	sed ${${3:+-i}:--n} '/^'"$FNAME"'[:'${2:+/}']/,/^[^\t]/ {/^'"$FNAME"'[:'${2:+/}']\|^\t/'${${3:+d}:-p}'};' "$MAKEFILE"
+	#awk -i inplace "/^${t:gs_/_\\/_}:/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
     }
-    
+
     setopt extendedglob
 
     local CMD="$1"
@@ -59,7 +60,7 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(deps__replace_filename "$D" "$D" <<< "$RECIPE") 
+			    RECIPE=$(deps__replace_filename "$D" "$D" <<< "$RECIPE")
 			    DEPENDENCIES+=("$(deps__path "$D")")
 			fi
 		    done
@@ -138,7 +139,7 @@ function deps() {
 	    for f in "$@"; do
 		"$0" unset "$(deps__path "$f")"
 	    done
-	    rm -f "$@"
+	    rm -rf "$@"
 	    ;;
 
 	set) #TARGET [DEPENDENCY...], Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
@@ -151,7 +152,7 @@ function deps() {
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    for t in "$@"; do
-		awk -i inplace "/^${t:gs_/_\\/_}:/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
+		deps__echo_recipe "$t" true true
 	    done
 	    ;;
 

@@ -14,7 +14,7 @@ function deps() {
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
     function deps__replace_filename() { #OLD NEW (recipe on stdin)
-	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$2")"}
+	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(realpath -s --relative-to="$MAKEDIR" "$2")")"}
     }
 
     function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES
@@ -55,11 +55,11 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(deps__replace_filename "$D" "$(realpath -s --relative-to="$MAKEDIR" "$D")" <<< "$RECIPE") 
+			    RECIPE=$(deps__replace_filename "$D" "$D" <<< "$RECIPE") 
 			    DEPENDENCIES+=("$(realpath -s --relative-to="$MAKEDIR" "$D")")
 			fi
 		    done
-		    RECIPE=$(deps__replace_filename "$f" "$(realpath -s --relative-to="$MAKEDIR" "$f")" <<< "$RECIPE")
+		    RECIPE=$(deps__replace_filename "$f" "$f" <<< "$RECIPE")
 		    "$0" set "$(realpath -s --relative-to="$MAKEDIR" "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"
@@ -86,7 +86,7 @@ function deps() {
 	    for target in "${CP_SRCFILES[@]}"; do
 		local RECIPE=$(deps__echo_recipe "$target" true)
 		for retarget in "${CP_SRCFILES[@]}"; do
-		    RECIPE=$(deps__replace_filename "$retarget" $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename "$retarget")}) <<< "$RECIPE")
+		    RECIPE=$(deps__replace_filename "$retarget" "${@[-1]}${CP_BASENAME-/$(basename "$retarget")}" <<< "$RECIPE")
 		done
 		echo "$RECIPE" >> "$MAKEFILE"
 	    done

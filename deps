@@ -94,7 +94,7 @@ function deps() {
 
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(grep -EA1 "^$(realpath -s --relative-to="$MAKEDIR" "$1"):" "$MAKEFILE" | sed 's/\$\$/$/g')
+	    local RECIPE=$(deps__echo_recipe $(realpath -s --relative-to="$MAKEDIR" "$1") | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" >&2 && return 1
 	    echo "$RECIPE"
 	    ;;

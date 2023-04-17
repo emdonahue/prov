@@ -85,9 +85,9 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
-	    cp -ir "$@"
-	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})
 	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi #if file->dir use file basename
+	    cp -ir "$@"
+	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})	    
 	    for target in "${CP_SRCFILES[@]}"; do
 		local RECIPE=$(deps__echo_recipe "$target" true)
 		for retarget in "${CP_SRCFILES[@]}"; do

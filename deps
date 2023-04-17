@@ -13,8 +13,12 @@ function deps() {
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
-    function deps__replace_filename() { #OLD NEW (recipe on stdin)
-	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(realpath -s --relative-to="$MAKEDIR" "$2")")"}
+    function deps__path() {
+	realpath -s --relative-to="$MAKEDIR" "$1"
+    }
+    
+    function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin)
+	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"}
     }
 
     function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES
@@ -56,11 +60,11 @@ function deps() {
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
 			    RECIPE=$(deps__replace_filename "$D" "$D" <<< "$RECIPE") 
-			    DEPENDENCIES+=("$(realpath -s --relative-to="$MAKEDIR" "$D")")
+			    DEPENDENCIES+=("$(deps__path "$D")")
 			fi
 		    done
 		    RECIPE=$(deps__replace_filename "$f" "$f" <<< "$RECIPE")
-		    "$0" set "$(realpath -s --relative-to="$MAKEDIR" "$f")" "$DEPENDENCIES" <<< "$RECIPE"
+		    "$0" set "$(deps__path "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"
 		fi
@@ -71,9 +75,9 @@ function deps() {
 	    if [[ $# -eq 0 ]]; then
 		"$0" help "$CMD" 1>&2 && return 1
 	    elif [[ $# -eq 1 ]]; then
-		grep -E '^'"$(realpath -s --relative-to="$MAKEDIR" "$1")"':' "$MAKEFILE" | sed -E 's/^[^#]*#?//'
+		grep -E '^'"$(deps__path "$1")"':' "$MAKEFILE" | sed -E 's/^[^#]*#?//'
 	    else
-		local TARGET="${$(realpath -s --relative-to="$MAKEDIR" "$1"):gs_/_\\/_}"
+		local TARGET="${$(deps__path "$1"):gs_/_\\/_}"
 		shift
 		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1#${*}/" "$MAKEFILE"
 	    fi
@@ -94,7 +98,7 @@ function deps() {
 
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(deps__echo_recipe $(realpath -s --relative-to="$MAKEDIR" "$1") | sed 's/\$\$/$/g')
+	    local RECIPE=$(deps__echo_recipe $(deps__path "$1") | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" >&2 && return 1
 	    echo "$RECIPE"
 	    ;;
@@ -124,15 +128,15 @@ function deps() {
 		done
 	    else
 		mv -i "$@"
-		"$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$2")" #Delete overwritten recipe if it exists.
-		local RECIPES=$(deps__replace_filename "$(realpath -s --relative-to="$MAKEDIR" "$1")" "$2" < "$MAKEFILE")
+		"$0" unset "$(deps__path "$2")" #Delete overwritten recipe if it exists.
+		local RECIPES=$(deps__replace_filename "$(deps__path "$1")" "$2" < "$MAKEFILE")
 		echo "$RECIPES" > "$MAKEFILE"
 	    fi
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 	    for f in "$@"; do
-		"$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$f")"
+		"$0" unset "$(deps__path "$f")"
 	    done
 	    rm -f "$@"
 	    ;;

@@ -124,10 +124,9 @@ function deps() {
 		done
 	    else
 		mv -i "$@"
-		local SRC=$(realpath -s --relative-to="$MAKEDIR" "$1")
-		local DEST=$(realpath -s --relative-to="$MAKEDIR" "$2")
-		"$0" unset "$DEST" #Delete overwritten recipe if it exists.
-		sed -i ${${SEDFILENAME/SRC/"$SRC"}/DEST/"$DEST"} "$MAKEFILE"
+		"$0" unset "$(realpath -s --relative-to="$MAKEDIR" "$2")" #Delete overwritten recipe if it exists.
+		local RECIPES=$(deps__replace_filename "$(realpath -s --relative-to="$MAKEDIR" "$1")" "$2" < "$MAKEFILE")
+		echo "$RECIPES" > "$MAKEFILE"
 	    fi
 	    ;;
 

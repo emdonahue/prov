@@ -163,9 +163,12 @@ cd subdir
 deps cp b ../subdir2
 assert 'cp realpath dest' "$(deps echo ../subdir2/b)" "$(echo 'subdir2/b: a\n\tcat a > subdir2/b')"
 cd "$DIR"
+echo 'TEST'
 deps cp subdir2 subdir
-#assert 'cp nested dir' "$(deps echo subdir/subdir2/b)" "$(echo 'subdir/subdir2/b: a\n\tcat a > subdir/subdir2/b')"
-#cat Makefile >&2
+assert 'cp nested dir' "$(deps echo subdir/subdir2/b)" "$(echo 'subdir/subdir2/b: a\n\tcat a > subdir/subdir2/b')"
+ls
+ls subdir
+cat Makefile >&2
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

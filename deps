@@ -16,6 +16,10 @@ function deps() {
     function deps__replace_filename() { #OLD NEW (recipe on stdin)
 	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$2")"}
     }
+
+    function deps__echo_recipe() {
+	sed -n '/^'"$1"'[:/]/,/^[^\t]/ {/^'"$1"'[:/]\|^\t/p};' "$MAKEFILE"
+    }
     
     setopt extendedglob
 
@@ -80,16 +84,26 @@ function deps() {
 	    # dir ... -> dir
 	    # X file ... file [blocked by cp command]
 	    cp -ir "$@"
-	    local CP_SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
-	    if [[ ! -d "${@[-1]}" ]]; then #if not moving into dir, replace full src path with dest
-
-		#local CP_BASENAME=; else unset CP_BASENAME; fi
-	    for f in "${CP_SRCFILES[@]}"; do
-		echo "RECIPE FOR $f:" >&2
-		#sed -n '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};' "$MAKEFILE" >&2
-		sed -n '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {1p;/^\t/n};' "$MAKEFILE" >&2
+	    #local CP_SRCFILES=(${(u)${(@0):-"$(find "${@[1,-2]}" -type f -exec realpath -zs --relative-to="$MAKEDIR" {} \;)"}})
+	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})
+	    echo "SRCFILES: $CP_SRCFILES"
+	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi
+	    for src in "${CP_SRCFILES[@]}"; do
+		local SRCPATH=$(sed $SEDPATTERN <<< "$src")
+		#local RECIPE=$(sed -n '/^'"$SRCPATH"':/,/^[^\t]/ {/^'"$SRCPATH"':\|^\t/p};' "$MAKEFILE")
+		local RECIPE=$(deps__echo_recipe "$SRCPATH")
+		#replace with echo
+		echo "RECIPE FOR $src:\n$RECIPE" >&2
+		for dest in "${CP_SRCFILES[@]}"; do #TODO rename dest
+		    echo "replacement, $dest with $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename "$dest")}):"
+		    RECIPE=$(deps__replace_filename "$dest" $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename "$dest")}) <<< "$RECIPE")
+		    echo "$RECIPE"
+		done
+		echo "$RECIPE" >> "$MAKEFILE"
+		
+		#sed -n '/^'"$SRCPATH"':/,/^[^\t]/ {1p;/^\t/n};' "$MAKEFILE" >&2
 	    done
-	    sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename $f)}))"};"; done)" >> "$MAKEFILE"
+	    #sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename $f)}))"};"; done)" >> "$MAKEFILE"
 	    #sed -n "$(for f in "${CP_SRCFILES[@]}"; do echo -En '/^'"$(sed $SEDPATTERN <<< "$f")"':/,/^[^\t]/ {/^'"$(sed $SEDPATTERN <<< "$f")"':\|^\t/p};'; done)" "$MAKEFILE" | sed "$(for f in "${CP_SRCFILES[@]}"; do echo -En "${${SEDFILENAME/SRC/"$(sed $SEDPATTERN <<< "$f")"}/DEST/"$(sed $SEDREPLACEMENT <<< $(realpath -s --relative-to="$MAKEDIR" ${@[-1]}${CP_BASENAME-/$(basename $f)}))"};"; done)" >> "$MAKEFILE"
 	    ;;
 

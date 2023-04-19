@@ -9,7 +9,7 @@
 function deps() {
 
     local US=$'\037'
-    local SEDFILENAME="s${US}"'\(^\|[><| ]\)SRC\([><:/| ]\|$\)'"${US}"'\1DEST\2'"${US}g"
+    local SEDFILENAME="s${US}"'\(^\|[><| ]\)SRC\([><:/|) ]\|$\)'"${US}"'\1DEST\2'"${US}g"
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
@@ -17,8 +17,8 @@ function deps() {
 	realpath -ms --relative-to="$MAKEDIR" "$1"
     }
 
-    function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin)
-	sed ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"}
+    function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin or 3 if inplace)
+	sed ${3:+-i} ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"} "${3:--}"
     }
 
     function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES DELETE_RECIPE
@@ -85,11 +85,11 @@ function deps() {
 	    ;;
 
 	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
-	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi #if file->dir use file basename
+	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi #if file->dir use file basename2
 	    cp -ir "$@"
 	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})	    
 	    for target in "${CP_SRCFILES[@]}"; do
-		local RECIPE=$(deps__echo_recipe "$target" true)
+		local RECIPE=$(deps__echo_recipe "$target" dir)
 		for retarget in "${CP_SRCFILES[@]}"; do
 		    RECIPE=$(deps__replace_filename "$retarget" "${@[-1]}${CP_BASENAME-/$(basename "$retarget")}" <<< "$RECIPE")
 		done
@@ -112,7 +112,7 @@ function deps() {
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs dirname -z | xargs -0 mkdir -p) | tr "\\0" " ")' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs dirname -z | xargs -0 mkdir -p) | tr \\0 " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile
@@ -130,8 +130,7 @@ function deps() {
 	    else
 		mv -i "$@"
 		"$0" unset "$(deps__path "$2")" #Delete overwritten recipe if it exists.
-		local RECIPES=$(deps__replace_filename "$(deps__path "$1")" "$2" < "$MAKEFILE")
-		echo "$RECIPES" > "$MAKEFILE"
+		deps__replace_filename "$(deps__path "$1")" "$2" "$MAKEFILE"
 	    fi
 	    ;;
 
@@ -152,7 +151,7 @@ function deps() {
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    for t in "$@"; do
-		deps__echo_recipe "$t" true true
+		deps__echo_recipe "$t" dir inplace
 	    done
 	    ;;
 

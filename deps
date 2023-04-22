@@ -122,6 +122,10 @@ function deps() {
 	    less "$MAKEFILE"
 	    ;;
 
+	make) #, Runs the nearest ancestor Makefile.
+	    make -C "$MAKEDIR"
+	    ;;
+	
 	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.
 	    if [[ -d "${@[-1]}" ]]; then
 		for f in "${@[1,-2]}"; do

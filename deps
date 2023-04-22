@@ -112,7 +112,7 @@ function deps() {
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs dirname -z | xargs -0 mkdir -p) | tr \\0 " ")' >> Makefile
+	    echo 'TARGETS=$(shell sed -nE "/^[^[:space:]]*:/ s/:.*//p" Makefile | grep -Zv -e "^all$$" -e "^clean$$" -e "^\.PHONY$$" | tee >(xargs -r dirname -z | xargs -r0 mkdir -p) | tr \\0 " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile

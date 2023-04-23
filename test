@@ -177,5 +177,10 @@ deps cp subdir/subdir2 subdir3
 assert 'cp create dir' "$(deps echo subdir3/b)" "$(echo 'subdir3/b: a\n\tcat a > subdir3/b')"
 teardown
 
+#abstract
+deps init
+assert abstract "$(deps__abstract_recipe test <<< 'echo test > test')" 'echo test > $@'
+teardown
+
 [[ -z "$ERR" ]] && echo "All Tests Pass"
 exit "$ERR"

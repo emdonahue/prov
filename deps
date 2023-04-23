@@ -47,7 +47,7 @@ function deps() {
     case "$CMD" in
 	--help|-h|help) #[SUBCOMMAND], Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
 	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
-	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2 - \3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/'
+	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2;\3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/' | column -t -s\;
 	    ;;
 
 	add) #[FILE...], Heuristically scans history for recipe that created FILE and adds to Makefile. Recipes must contain redirects to FILE (eg "> FILE"). Dependencies are determined by tokens contained in recipe that refer to current files. Must be run from directory where command was first executed.
@@ -84,7 +84,7 @@ function deps() {
 	    fi
 	    ;;
 
-	cp) #SOURCE... DEST; Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
+	cp) #SOURCE... DEST, Recursively copies the SOURCE files and folders to DEST, modifying their mutual dependencies to point to the new copies within a given cp command.
 	    if [[ ! -d "${@[-1]}" ]]; then local CP_BASENAME=; else unset CP_BASENAME; fi #if file->dir use file basename2
 	    cp -ir "$@"
 	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})	    

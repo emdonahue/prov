@@ -190,6 +190,8 @@ deps merge a b c
 assert 'merge multi' "$(deps echo a)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
 assert 'merge multi b' "$(deps echo b)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
 assert 'merge multi c' "$(deps echo c)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
+deps merge b d e
+assert 'merge multi d e' "$(deps echo d)" "$(echo 'a b c d e: \n\techo $(words 1,$(@F)) > $@')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

@@ -11,7 +11,6 @@
 function deps() {
 
     local US=$'\037'
-    local SEDFILENAME="s${US}"'\(^\|[><| ]\)SRC\([><:/|) ]\|$\)'"${US}"'\1DEST\2'"${US}g"
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
@@ -20,8 +19,10 @@ function deps() {
     }
 
     function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin or 3 if inplace)
-	sed ${3:+-i} ${${SEDFILENAME/SRC/"$(sed "$SEDPATTERN" <<< "$1")"}/DEST/"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"} "${3:--}"
+	sed ${3:+-i} 's/\(^\|[><| ]\)'"$(sed "$SEDPATTERN" <<< "$1")"'\([><:/|) ]\|$\)/\1'"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"'\2/g' "${3:--}"
     }
+
+    
 
     function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES DELETE_RECIPE
 	local FNAME=$(sed $SEDPATTERN <<< "$1")
@@ -31,6 +32,10 @@ function deps() {
 
     function deps__abstract_recipe() {
 	local RECIPE=$(sed -E 's/>\s*'$(sed "$SEDPATTERN" <<< "$1")'\b/> $@/g')
+	local ARGS=(${(s:-:)1})
+	for i in {1..$#ARGS}; do
+	    RECIPE="$(sed -E 's/\b'$(sed "$SEDPATTERN" <<< "$ARGS[$i]")'\b/$(words '$i',$(@F))/g' <<< "$RECIPE")"
+	done
 	echo "$RECIPE"
     }
 

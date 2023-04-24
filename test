@@ -4,7 +4,10 @@ source $(dirname "$0")/deps >/dev/null
 
 function assert() {
        if [[ "$2" != "$3" ]]; then
-       	   echo "Failure: $1\n\tReceived: $2\n\tExpected: $3"
+       	   echo -n "Failure: $1\n\tReceived: "
+	   echo -E "$2"
+	   echo -n '\tExpected: '
+	   echo -E "$3"
 	   ERR=1
        fi
 }
@@ -179,7 +182,9 @@ teardown
 
 #abstract
 deps init
-#assert abstract "$(deps__abstract_recipe test <<< 'echo test > test')" 'echo test > $@'
+deps set a <<< 'echo a > a'
+deps merge a
+cat Makefile
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

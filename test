@@ -184,7 +184,12 @@ teardown
 deps init
 deps set a <<< 'echo a > a'
 deps merge a
-cat Makefile
+assert merge "$(deps echo a)" "$(echo 'a: \n\techo $(words 1,$(@F)) > $@')"
+deps set a <<< 'echo a > a'
+deps merge a b c
+assert 'merge multi' "$(deps echo a)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
+assert 'merge multi b' "$(deps echo b)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
+assert 'merge multi c' "$(deps echo c)" "$(echo 'a b c: \n\techo $(words 1,$(@F)) > $@')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

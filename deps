@@ -24,31 +24,23 @@ function deps() {
 
     function deps__edit_rule() { #TARGET
 	local PATTERN REPLACEMENT
-	zparseopts -E -D p:=PATTERN r:=REPLACEMENT
-	awk -vTARGET="$1" -vPATTERN="${PATTERN[2]//\\/\\\\}" -vREPLACEMENT="${REPLACEMENT[2]//\\/\\\\}" -i inplace '$0 ~ TARGET {rule=1} !/^\t/ && $0 !~ TARGET {rule=0} rule {print gensub(PATTERN,REPLACEMENT,"g")} !rule' "$MAKEFILE"
-    }
-    
-    function deps__sed_recipe() { #TARGET SEDPROGRAM INCLUDEDEPS
-	local FNAME=$(sed $SEDPATTERN <<< "$1")
-	#echo -E '/^'"$FNAME"'[:/]/,/^[^\t]/ {/^\t/,/^\t/ {'"$2"'}}' >&2
-	sed -Ei '/^'"$FNAME"'[:/]/,/^[^\t]/ {/^\t/ '"$2"'}' "$MAKEFILE"
+	zparseopts -E -D -F p:=PATTERN r:=REPLACEMENT b=BODYONLY
+	awk -vTARGET="$1" -vPATTERN="${PATTERN[2]//\\/\\\\}" -vREPLACEMENT="${REPLACEMENT[2]//\\/\\\\}" -vBODYONLY="$BODYONLY" -i inplace '$0 ~ "^"TARGET":" {rule=1; if (BODYONLY) {print; next}} !/^\t/ && $0 !~ TARGET {rule=0} rule && PATTERN {print gensub(PATTERN,REPLACEMENT,"g")} !rule' "$MAKEFILE"
+	#awk -vTARGET="$1" -vPATTERN="${PATTERN[2]//\\/\\\\}" -vREPLACEMENT="${REPLACEMENT[2]//\\/\\\\}" -vBODYONLY="$BODYONLY" -i inplace '$0 ~ "^"TARGET":" {rule=1; if (BODYONLY) {print; next}} !/^\t/ && $0 !~ TARGET {rule=0} rule {print gensub(PATTERN,REPLACEMENT,"g")} !rule' "$MAKEFILE"
     }
     
     function deps__echo_recipe() { #FILENAME INCLUDE_DIRECTORIES DELETE_RECIPE
 	local FNAME=$(sed $SEDPATTERN <<< "$1")
-	sed ${${3:+-i}:--n} '/^'"$FNAME"'[:'${2:+/}']/,/^[^\t]/ {/^'"$FNAME"'[:'${2:+/}']\|^\t/'${${3:+d}:-p}'};' "$MAKEFILE"
+	sed -E ${${3:+-i}:--n} '/^([^\t][^:]* )?'"$FNAME"'[ :'${2:+/}']/,/^[^\t]/ {/^([^\t][^:]* )?'"$FNAME"'[ :'${2:+/}']|^\t/'${${3:+d}:-p}'};' "$MAKEFILE"
 	#incomplete but arguably clearer #awk -i inplace "/^${t:gs_/_\\/_}:/ {skip=1; next} skip && !/^\s/ {skip=0} !skip {print}" "$MAKEFILE"
     }
 
     function deps__abstract_recipe() {
-	deps__edit_rule "$1" -p '>\s*'"$1"'\>' -r '> $@'
-	#return
+	deps__edit_rule -b "$(sed "$SEDPATTERN" <<< "$1")" -p '>\s*'"$(sed "$SEDPATTERN" <<< "$1")"'\>' -r '> $@'
 	local ARGS=(${(s:-:)1})
 	for i in {1..$#ARGS}; do
-	    PROGRAM="$PROGRAM"'s/\b'$(sed "$SEDPATTERN" <<< "$ARGS[$i]")'\b/$(words '$i',$(@F))/g;'
+	    deps__edit_rule -b "$(sed "$SEDPATTERN" <<< "$1")" -p '\<'"$(sed "$SEDPATTERN" <<< "$ARGS[$i]")"'\>' -r '$(words '$i',$(@F))'
 	done
-	#echo -E $1 "***" $PROGRAM>&2
-	#deps__edit_recipe "$1" "$PROGRAM"
     }    
 
     local CMD="$1"
@@ -149,7 +141,8 @@ function deps() {
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
-	     deps__abstract_recipe ${(@)$(deps__path "$@")}
+	    deps__abstract_recipe ${(@)$(deps__path "$@")}
+	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(sed $SEDPATTERN <<< "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
 	    ;;
 	
 	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.

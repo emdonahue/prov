@@ -25,6 +25,7 @@ edit TARGET - Places the recipe for TARGET on the command line so it can be modi
 init  - Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
 less  - Opens the Makefile in less.
 make  - Runs the nearest ancestor Makefile.
+merge TARGET [PATTERN...] - Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
 mv SOURCE... DEST - Moves a file with mv and updates the Makefile accordingly.
 rm TARGET - Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 set TARGET [DEPENDENCY...] - Creates a new recipe for TARGET using DEPENDENCY and a recipe from stdin.
@@ -38,3 +39,4 @@ unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 - make cp handle directory structures. currently only works for simple, flat cases.
 - echo should escape backslashes
 - cp should delete overwritten target
+- convert sedpattern/sedreplacement to functions

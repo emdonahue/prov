@@ -7,6 +7,7 @@
 #TODO make cp handle directory structures. currently only works for simple, flat cases.
 #TODO echo should escape backslashes
 #TODO cp should delete overwritten target
+#TODO convert sedpattern/sedreplacement to functions
 
 function deps() {
 
@@ -152,13 +153,17 @@ function deps() {
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
-	    #deps__abstract_recipe ${(@)$(deps__path "$@")}
-	    local TARGET="$(deps__path "$1")"
-	    deps__edit_rule "$TARGET" '>\s*'"$(deps__pattern $TARGET)"'\>' '> $@'
-	    local ARGS=(${(s:-:)1:r:t})
-	    for i in {1..$#ARGS}; do
-		deps__edit_rule "$TARGET" '\<'"$(deps__pattern $(deps__path "$ARGS[$i]"))"'\>' '$(words '$i',$(@F))'
-	    done
+	    deps__abstract_recipe ${(@)$(deps__path "$@")}
+	    () {
+		return
+		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@'
+		local ARGS=(${(s:-:)1:r:t})
+		for i in {1..$#ARGS}; do
+		    #deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))'
+		done
+		
+	    } "$@" #"${(@)$(deps__path "$@")}"
+	    #sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
 	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern $1)"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
 	    ;;
 	

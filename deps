@@ -18,6 +18,14 @@ function deps() {
 	realpath -ms --relative-to="$MAKEDIR" "$@"
     }
 
+    function deps__pattern() {
+	sed "$SEDPATTERN" <<< "$*"
+    }
+
+    function deps__replacement() {
+	sed "$SEDREPLACEMENT" <<< "$*"
+    }
+
     function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin or 3 if inplace)
 	sed ${3:+-i} 's/\(^\|[><| ]\)'"$(sed "$SEDPATTERN" <<< "$1")"'\([><:/|) ]\|$\)/\1'"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"'\2/g' "${3:--}"
     }
@@ -30,7 +38,7 @@ function deps() {
 	deps__awk -i inplace "$1" '!rule'
     }
     
-    function deps__edit_rule() { #TARGET
+    function deps__edit_rule() { #TARGET PATTERN REPLACEMENT
 	deps__awk -vPATTERN="${2//\\/\\\\}" -vREPLACEMENT="${3//\\/\\\\}" -i inplace "$1" 'rule && /^\t/ {print gensub(PATTERN,REPLACEMENT,"g")} rule==/^[^\t]/'
     }
     
@@ -144,8 +152,14 @@ function deps() {
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
-	    deps__abstract_recipe ${(@)$(deps__path "$@")}
-	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(sed $SEDPATTERN <<< "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
+	    #deps__abstract_recipe ${(@)$(deps__path "$@")}
+	    local TARGET="$(deps__path "$1")"
+	    deps__edit_rule "$TARGET" '>\s*'"$(deps__pattern $TARGET)"'\>' '> $@'
+	    local ARGS=(${(s:-:)1:r:t})
+	    for i in {1..$#ARGS}; do
+		deps__edit_rule "$TARGET" '\<'"$(deps__pattern $(deps__path "$ARGS[$i]"))"'\>' '$(words '$i',$(@F))'
+	    done
+	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern $1)"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
 	    ;;
 	
 	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.

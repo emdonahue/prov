@@ -39,8 +39,8 @@ function deps() {
 	deps__awk -i inplace "$1" '!rule'
     }
     
-    function deps__edit_rule() { #TARGET PATTERN REPLACEMENT
-	deps__awk -vPATTERN="${2//\\/\\\\}" -vREPLACEMENT="${3//\\/\\\\}" -i inplace "$1" 'rule && /^\t/ {print gensub(PATTERN,REPLACEMENT,"g")} rule==/^[^\t]/'
+    function deps__edit_rule() { #TARGET PATTERN REPLACEMENT GUARD
+	deps__awk -vPATTERN="${2//\\/\\\\}" -vREPLACEMENT="${3//\\/\\\\}" -i inplace "$1" 'rule && '"${4:-1}"' {print gensub(PATTERN,REPLACEMENT,"g")} rule==/^[^\t]/'
     }
     
     function deps__echo_rule() { #TARGET
@@ -147,10 +147,10 @@ function deps() {
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
 	    #deps__abstract_recipe ${(@)$(deps__path "$@")}
 	    () {
-		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@'
+		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@' '/^\t/'
 		local ARGS=(${(s:-:)1:r:t})
 		for i in {1..$#ARGS}; do
-		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))'
+		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))' '/^\t/'
 		done
 	    } "${(@f)$(deps__path "$@")}"
 	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"

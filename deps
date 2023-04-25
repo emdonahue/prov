@@ -47,14 +47,6 @@ function deps() {
 	deps__awk "$1" 'rule'
     }
 
-    function deps__abstract_recipe() {
-	deps__edit_rule "$1" '>\s*'"$(sed "$SEDPATTERN" <<< "$1")"'\>' '> $@'
-	local ARGS=(${(s:-:)1})
-	for i in {1..$#ARGS}; do
-	    deps__edit_rule "$1" '\<'"$(sed "$SEDPATTERN" <<< "$ARGS[$i]")"'\>' '$(words '$i',$(@F))'
-	done
-    }    
-
     local CMD="$1"
     [[ $# -ne 0 ]] && shift
 
@@ -153,18 +145,15 @@ function deps() {
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
-	    deps__abstract_recipe ${(@)$(deps__path "$@")}
+	    #deps__abstract_recipe ${(@)$(deps__path "$@")}
 	    () {
-		return
 		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@'
 		local ARGS=(${(s:-:)1:r:t})
 		for i in {1..$#ARGS}; do
-		    #deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))'
+		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))'
 		done
-		
-	    } "$@" #"${(@)$(deps__path "$@")}"
-	    #sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
-	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern $1)"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
+	    } "${(@f)$(deps__path "$@")}"
+	    sed -Ei '/^all:|^clean:/! s/(^[^:]*'"$(deps__pattern "$1")"'[^:]*)(:.*)/\1'${@[2]:+ }"$*[2,-1]"'\2/' "$MAKEFILE"
 	    ;;
 	
 	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.

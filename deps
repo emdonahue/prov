@@ -153,7 +153,7 @@ function deps() {
 		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@' '/^\t/'
 		local ARGS=(${(s:-:)1:r:t})
 		for i in {1..$#ARGS}; do
-		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(@F))' '/^\t/'
+		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(subst -, ,$(@F)))' '/^\t/'
 		done
 		deps__edit_rule "$1" '^([^:]*):' '\1'${@[2]:+ }"$*[2,-1]:" '!/^\t/'
 	    } "${(@f)$(deps__path "$@")}"

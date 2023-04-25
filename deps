@@ -122,8 +122,12 @@ function deps() {
 	    echo "$RECIPE"
 	    ;;
 
-	edit) #TARGET, Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed.
-	    print -z "$("$0" echo "$1" | tail -n +2 | sed -E 's/^\s*//')"
+	edit) #[TARGET], Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed. If TARGET is omitted, open EDITOR on the Makefile.
+	    if [[ $1 ]]; then
+		print -z "$("$0" echo "$1" | tail -n +2 | sed -E 's/^\s*//')"
+	    else
+		${=EDITOR} "$MAKEFILE"
+	    fi
 	    ;;
 
 	init) #, Creates a new Makefile in the current directory. Use before other commands that attempt to modify the Makefile.
@@ -145,7 +149,6 @@ function deps() {
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
-	    #deps__abstract_recipe ${(@)$(deps__path "$@")}
 	    () {
 		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@' '/^\t/'
 		local ARGS=(${(s:-:)1:r:t})

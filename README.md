@@ -40,3 +40,5 @@ unset TARGET - Deletes the recipe for building TARGET from the Makefile.
 - echo should escape backslashes
 - cp should delete overwritten target
 - convert sedpattern/sedreplacement to functions
+- add should search for the file relative to pwd even if created from another dir
+- test merge with files in subdirs

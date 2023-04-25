@@ -184,14 +184,14 @@ teardown
 deps init
 deps set a <<< 'echo a > a'
 deps merge a
-assert merge "$(deps echo a)" "$(echo 'a: \n\techo $(words 1,$(subst -, ,$(@F))) > $@')"
+assert merge "$(deps echo a)" "$(echo 'a: \n\techo $(word 1,$(subst -, ,$(@F))) > $@')"
 deps set a <<< 'echo a > a'
 deps merge a b c
-assert 'merge multi' "$(deps echo a)" "$(echo 'a b c: \n\techo $(words 1,$(subst -, ,$(@F))) > $@')"
-assert 'merge multi b' "$(deps echo b)" "$(echo 'a b c: \n\techo $(words 1,$(subst -, ,$(@F))) > $@')"
-assert 'merge multi c' "$(deps echo c)" "$(echo 'a b c: \n\techo $(words 1,$(subst -, ,$(@F))) > $@')"
+assert 'merge multi' "$(deps echo a)" "$(echo 'a b c: \n\techo $(word 1,$(subst -, ,$(@F))) > $@')"
+assert 'merge multi b' "$(deps echo b)" "$(echo 'a b c: \n\techo $(word 1,$(subst -, ,$(@F))) > $@')"
+assert 'merge multi c' "$(deps echo c)" "$(echo 'a b c: \n\techo $(word 1,$(subst -, ,$(@F))) > $@')"
 deps merge b d e
-assert 'merge multi d e' "$(deps echo d)" "$(echo 'a b c d e: \n\techo $(words 1,$(subst -, ,$(@F))) > $@')"
+assert 'merge multi d e' "$(deps echo d)" "$(echo 'a b c d e: \n\techo $(word 1,$(subst -, ,$(@F))) > $@')"
 teardown
 
 [[ -z "$ERR" ]] && echo "All Tests Pass"

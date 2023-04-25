@@ -8,6 +8,8 @@
 #TODO echo should escape backslashes
 #TODO cp should delete overwritten target
 #TODO convert sedpattern/sedreplacement to functions
+#TODO add should search for the file relative to pwd even if created from another dir
+#TODO test merge with files in subdirs
 
 function deps() {
 
@@ -16,7 +18,7 @@ function deps() {
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
     function deps__path() {
-	realpath -ms --relative-to="$MAKEDIR" "$@"
+	[[ $1 ]] && realpath -ms --relative-to="$MAKEDIR" "$@"
     }
 
     function deps__pattern() {
@@ -153,7 +155,7 @@ function deps() {
 		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@' '/^\t/'
 		local ARGS=(${(s:-:)1:r:t})
 		for i in {1..$#ARGS}; do
-		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(words '$i',$(subst -, ,$(@F)))' '/^\t/'
+		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(word '$i',$(subst -, ,$(@F)))' '/^\t/'
 		done
 		deps__edit_rule "$1" '^([^:]*):' '\1'${@[2]:+ }"$*[2,-1]:" '!/^\t/'
 	    } "${(@f)$(deps__path "$@")}"

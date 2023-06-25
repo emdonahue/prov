@@ -11,42 +11,42 @@
 #TODO add should search for the file relative to pwd even if created from another dir
 #TODO test merge with files in subdirs
 
-function deps() {
+function prov() {
 
     local US=$'\037'
     local SEDPATTERN='s/[^^]/[&]/g; s/\^/\\^/g'
     local SEDREPLACEMENT='s/[&/\]/\\&/g'
 
-    function deps__path() {
+    function prov__path() {
 	[[ $1 ]] && realpath -ms --relative-to="$MAKEDIR" "$@"
     }
 
-    function deps__pattern() {
+    function prov__pattern() {
 	sed "$SEDPATTERN" <<< "$*"
     }
 
-    function deps__replacement() {
+    function prov__replacement() {
 	sed "$SEDREPLACEMENT" <<< "$*"
     }
 
-    function deps__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin or 3 if inplace)
-	sed ${3:+-i} 's/\(^\|[><| ]\)'"$(sed "$SEDPATTERN" <<< "$1")"'\([><:/|) ]\|$\)/\1'"$(sed "$SEDREPLACEMENT" <<< "$(deps__path "$2")")"'\2/g' "${3:--}"
+    function prov__replace_filename() { #OLDRELATIVE NEWABSOLUTE (recipe on stdin or 3 if inplace)
+	sed ${3:+-i} 's/\(^\|[><| ]\)'"$(sed "$SEDPATTERN" <<< "$1")"'\([><:/|) ]\|$\)/\1'"$(sed "$SEDREPLACEMENT" <<< "$(prov__path "$2")")"'\2/g' "${3:--}"
     }
 
-    function deps__awk() { #[ARG...] TARGET PROGRAM
+    function prov__awk() { #[ARG...] TARGET PROGRAM
 	awk -vTARGET="$(sed $SEDPATTERN <<< "$@[-2]")" $@[1,-3] '!/^\t/ {rule=0} $0 ~ "^([^\t][^:]* )?"TARGET"[ :/]" && $0 !~ "^all:|^clean:" {rule=1} '"$@[-1]" "$MAKEFILE"
     }
 
-    function deps__delete_rule() {
-	deps__awk -i inplace "$1" '!rule'
+    function prov__delete_rule() {
+	prov__awk -i inplace "$1" '!rule'
     }
     
-    function deps__edit_rule() { #TARGET PATTERN REPLACEMENT GUARD
-	deps__awk -vPATTERN="${2//\\/\\\\}" -vREPLACEMENT="${3//\\/\\\\}" -i inplace "$1" 'rule && '"${4:-1}"' {print gensub(PATTERN,REPLACEMENT,"g")} !rule || !'"${4:-1}"
+    function prov__edit_rule() { #TARGET PATTERN REPLACEMENT GUARD
+	prov__awk -vPATTERN="${2//\\/\\\\}" -vREPLACEMENT="${3//\\/\\\\}" -i inplace "$1" 'rule && '"${4:-1}"' {print gensub(PATTERN,REPLACEMENT,"g")} !rule || !'"${4:-1}"
     }
     
-    function deps__echo_rule() { #TARGET
-	deps__awk "$1" 'rule'
+    function prov__echo_rule() { #TARGET
+	prov__awk "$1" 'rule'
     }
 
     local CMD="$1"
@@ -66,7 +66,7 @@ function deps() {
     # Parse the main subcommand
     case "$CMD" in
 	--help|-h|help) #[SUBCOMMAND], Prints help text and options for SUBCOMMAND. If SUBCOMMAND omitted, prints list of subcommands.
-	    [[ $# -eq 0 ]] && echo 'deps - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: deps SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
+	    [[ $# -eq 0 ]] && echo 'prov - Automatic Makefile generation for data processing pipelines from commandline history\nUsage: prov SUBCOMMAND [ARGUMENTS...]\nSubcommands:'
 	    grep -E -- "${1:-\\w+}\)\s#" "$functions_source[$0]" | sed -E -- "s/^[[:space:]]*([-|[:alpha:]]+)\)\s#([^,]*), (.*)/\1 \2;\3/" | sed $((${+1}+1))',$ s/^[[:space:]]*/\t/' | column -t -s\;
 	    ;;
 
@@ -80,12 +80,12 @@ function deps() {
 		    local IFS=$IFS')(><|'
 		    for D in "${=RECIPE}"; do
 			if [[ -f "$D" && "$D" != "$f" ]]; then
-			    RECIPE=$(deps__replace_filename "$D" "$D" <<< "$RECIPE")
-			    DEPENDENCIES+=("$(deps__path "$D")")
+			    RECIPE=$(prov__replace_filename "$D" "$D" <<< "$RECIPE")
+			    DEPENDENCIES+=("$(prov__path "$D")")
 			fi
 		    done
-		    RECIPE=$(deps__replace_filename "$f" "$f" <<< "$RECIPE")
-		    "$0" set "$(deps__path "$f")" "$DEPENDENCIES" <<< "$RECIPE"
+		    RECIPE=$(prov__replace_filename "$f" "$f" <<< "$RECIPE")
+		    "$0" set "$(prov__path "$f")" "$DEPENDENCIES" <<< "$RECIPE"
 		    echo "Recipe added to $MAKEFILE:"
 		    "$0" echo "$f"
 		fi
@@ -96,9 +96,9 @@ function deps() {
 	    if [[ $# -eq 0 ]]; then
 		"$0" help "$CMD" 1>&2 && return 1
 	    elif [[ $# -eq 1 ]]; then
-		grep -E '^'"$(deps__path "$1")"':' "$MAKEFILE" | sed -E 's/^[^#]*#?//'
+		grep -E '^'"$(prov__path "$1")"':' "$MAKEFILE" | sed -E 's/^[^#]*#?//'
 	    else
-		local TARGET="${$(deps__path "$1"):gs_/_\\/_}"
+		local TARGET="${$(prov__path "$1"):gs_/_\\/_}"
 		shift
 		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1#${*}/" "$MAKEFILE"
 	    fi
@@ -109,9 +109,9 @@ function deps() {
 	    cp -ir "$@"
 	    local CP_SRCFILES=(${(u)${(@0):-"$(realpath -sz --relative-to "$MAKEDIR" "${@[1,-2]}")"}})	    
 	    for target in "${CP_SRCFILES[@]}"; do
-		local RECIPE=$(deps__echo_rule "$target")
+		local RECIPE=$(prov__echo_rule "$target")
 		for retarget in "${CP_SRCFILES[@]}"; do
-		    RECIPE=$(deps__replace_filename "$retarget" "${@[-1]}${CP_BASENAME-/$(basename "$retarget")}" <<< "$RECIPE")
+		    RECIPE=$(prov__replace_filename "$retarget" "${@[-1]}${CP_BASENAME-/$(basename "$retarget")}" <<< "$RECIPE")
 		done
 		echo "$RECIPE" >> "$MAKEFILE"
 	    done
@@ -119,7 +119,7 @@ function deps() {
 
 	echo) #TARGET, Echoes the recipe for TARGET
 	    [[ ! -f "$MAKEFILE" ]] && return 1
-	    local RECIPE=$(deps__echo_rule $(deps__path "$1") | sed 's/\$\$/$/g')
+	    local RECIPE=$(prov__echo_rule $(prov__path "$1") | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" >&2 && return 1
 	    echo "$RECIPE"
 	    ;;
@@ -147,18 +147,18 @@ function deps() {
 	    ;;
 
 	make) #, Runs the nearest ancestor Makefile.
-	    deps__path "$@" | xargs make -C "$MAKEDIR"
+	    prov__path "$@" | xargs make -C "$MAKEDIR"
 	    ;;
 
 	merge) #TARGET [PATTERN...], Converts the existing rule for TARGET into a generic recipe and adds PATTERN as a parallel target to be built using the same instructions. By default, > TARGET will be replaced with $@ and substrings of TARGET separated by - will be replaced with code to extract the relevant portion from each PATTERN including TARGET. Each PATTERN & TARGET should be of the form a-b-c... where each component is one argument needed to define the recipe.
 	    () {
-		deps__edit_rule "$1" '>\s*'"$(deps__pattern $1)"'\>' '> $@' '/^\t/'
+		prov__edit_rule "$1" '>\s*'"$(prov__pattern $1)"'\>' '> $@' '/^\t/'
 		local ARGS=(${(s:-:)1:r:t})
 		for i in {1..$#ARGS}; do
-		    deps__edit_rule "$1" '\<'"$(deps__pattern $ARGS[$i])"'\>' '$(word '$i',$(subst -, ,$(@F)))' '/^\t/'
+		    prov__edit_rule "$1" '\<'"$(prov__pattern $ARGS[$i])"'\>' '$(word '$i',$(subst -, ,$(@F)))' '/^\t/'
 		done
-		deps__edit_rule "$1" '^([^:]*):' '\1'${@[2]:+ }"$*[2,-1]:" '!/^\t/'
-	    } "${(@f)$(deps__path "$@")}"
+		prov__edit_rule "$1" '^([^:]*):' '\1'${@[2]:+ }"$*[2,-1]:" '!/^\t/'
+	    } "${(@f)$(prov__path "$@")}"
 	    ;;
 	
 	mv) #SOURCE... DEST, Moves a file with mv and updates the Makefile accordingly.
@@ -168,14 +168,14 @@ function deps() {
 		done
 	    else
 		mv -i "$@"
-		"$0" unset "$(deps__path "$2")" #Delete overwritten recipe if it exists.
-		deps__replace_filename "$(deps__path "$1")" "$2" "$MAKEFILE"
+		"$0" unset "$(prov__path "$2")" #Delete overwritten recipe if it exists.
+		prov__replace_filename "$(prov__path "$1")" "$2" "$MAKEFILE"
 	    fi
 	    ;;
 
 	rm) #TARGET, Unsets the recipe for building TARGET from the Makefile and deletes the corresponding file.
 	    for f in "$@"; do
-		"$0" unset "$(deps__path "$f")"
+		"$0" unset "$(prov__path "$f")"
 	    done
 	    rm -rf "$@"
 	    ;;
@@ -190,7 +190,7 @@ function deps() {
 
 	unset) #TARGET, Deletes the recipe for building TARGET from the Makefile.
 	    for t in "$@"; do
-		deps__delete_rule "$t"
+		prov__delete_rule "$t"
 	    done
 	    ;;
 

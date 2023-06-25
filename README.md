@@ -1,15 +1,15 @@
-# deps
-Automatic Makefile generation and dependency management for data processing pipelines from commandline history
+# prov
+Automatic Makefile-based provenance tracking for commandline data processing pipelines.
 
-deps is a zshell function that contains a collection of subcommands for generating and managing makefiles automatically from your commandline history. Useful for datascience projects that involve extended pipelines of exploratory data processing and file manipulation from the command line.
+prov is a zshell function that contains a collection of subcommands for generating and managing makefiles automatically from your commandline history. Useful for datascience projects that involve extended pipelines of exploratory data processing and file manipulation from the command line.
 
 ## Quick Start
 
-First, source the deps file and create a Makefile at the root of your project using `deps init`.
+First, source the prov file and create a Makefile at the root of your project using `prov init`.
 
-As you create files using standard redirects `echo 'data' > datafile`, you can add them to the Makefile with the simple command `deps add datafile`, which searches the history for a redirect to the data file ("> datafile") and uses that command as the recipe, with dependencies heuristically extracted therefrom. Commands that produce files without using redirects or that otherwise foil the heuristics used by add can be added manually with `deps set`. The `deps set` subcommand accepts Makefile dependencies as arguments  and reads the recipe from stdin. The easiest way use this is to type `deps set dependency1 dependency2 <<'EOF'`, hit enter, then scroll up through your command history to find the command you want to use as the recipe, hit enter again, and type `EOF` again to complete the heredoc.
+As you create files using standard redirects `echo 'data' > datafile`, you can add them to the Makefile with the simple command `prov add datafile`, which searches the history for a redirect to the data file ("> datafile") and uses that command as the recipe, with dependencies heuristically extracted therefrom. Commands that produce files without using redirects or that otherwise foil the heuristics used by add can be added manually with `prov set`. The `prov set` subcommand accepts Makefile dependencies as arguments  and reads the recipe from stdin. The easiest way use this is to type `prov set dependency1 dependency2 <<'EOF'`, hit enter, then scroll up through your command history to find the command you want to use as the recipe, hit enter again, and type `EOF` again to complete the heredoc.
 
-When you inevitably discover, 42 steps into your analysis, that there was a formatting error in your original data file, you can now simply correct it and run `make` to rebuild all the subsequent files you have tracked using deps.
+When you inevitably discover, 42 steps into your analysis, that there was a formatting error in your original data file, you can now simply correct it and run `make` to rebuild all the subsequent files you have tracked using prov.
 
 See the documentation section for a complete list of utility commands for managing the Makefile.
 

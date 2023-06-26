@@ -33,6 +33,10 @@ function prov() {
 	sed ${3:+-i} 's/\(^\|[><| ]\)'"$(sed "$SEDPATTERN" <<< "$1")"'\([><:/|) ]\|$\)/\1'"$(sed "$SEDREPLACEMENT" <<< "$(prov__path "$2")")"'\2/g' "${3:--}"
     }
 
+    function prov__pwd() { #DIR Replaces Makefile-relative directories with paths relative to pwd.
+	sed 's_'"$(prov__pattern "$(realpath --relative-to "$MAKEDIR" .)")"'/__g'
+    }
+
     function prov__awk() { #[ARG...] TARGET PROGRAM
 	awk -vTARGET="$(sed $SEDPATTERN <<< "$@[-2]")" $@[1,-3] '!/^\t/ {rule=0} $0 ~ "^([^\t][^:]* )?"TARGET"[ :/]" && $0 !~ "^all:|^clean:" {rule=1} '"$@[-1]" "$MAKEFILE"
     }
@@ -126,7 +130,7 @@ function prov() {
 
 	edit) #[TARGET], Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed. If TARGET is omitted, open EDITOR on the Makefile.
 	    if [[ $1 ]]; then
-		print -z "$("$0" echo "$1" | tail -n +2 | sed -E 's/^\s*//')"
+		print -z "$("$0" echo "$1" | tail -n +2 | sed -E 's/^\s*//' | prov__pwd)"
 	    else
 		${=EDITOR} "$MAKEFILE"
 	    fi

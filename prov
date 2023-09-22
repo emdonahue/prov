@@ -141,7 +141,7 @@ function prov() {
 	    [[ -f Makefile ]] && {echo 'Makefile already exists' 1>&2; return 1}
 	    echo 'SHELL=zsh' >> Makefile
 	    echo '.PHONY: all clean' >> Makefile
-	    echo -E 'TARGETS=$(shell sed -nE "/^clean:/,$$ {/^[^\t].*:/ s/:.*//p}" Makefile | tr -s " " "\n" | grep -Zvx -e "all" -e "clean" -e "^\.PHONY" | tee >(xargs -r dirname -z | xargs -r0 mkdir -p) | tr \\0 " ")' >> Makefile
+	    echo -E 'TARGETS=$(shell sed -nE "/^clean:/,$$ {/^[^\t].*:/ s/:.*//p}" Makefile | tr -s " " "\n" | grep -Zv -e "^all$$" -e "^clean$$" -e "^[.]PHONY$$" -e "%" -e "[$$]" | tee >(xargs -r dirname -z | xargs -r0 mkdir -p) | tr \\0 " ")' >> Makefile
 	    echo 'all: $(TARGETS)' >> Makefile
 	    echo 'clean:' >> Makefile
 	    echo '\trm -f $(TARGETS)' >> Makefile

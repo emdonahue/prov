@@ -10,6 +10,7 @@
 #TODO convert sedpattern/sedreplacement to functions
 #TODO add should search for the file relative to pwd even if created from another dir
 #TODO test merge with files in subdirs
+#TODO add should re-insert ./ in front of scripts when re-pathing them
 
 function prov() {
 
@@ -125,7 +126,7 @@ function prov() {
 	    [[ ! -f "$MAKEFILE" ]] && return 1
 	    local RECIPE=$(prov__echo_rule $(prov__path "$1") | sed 's/\$\$/$/g')
 	    [[ -z "$RECIPE" ]] && echo "No recipe for $1 found in $MAKEFILE" >&2 && return 1
-	    echo "$RECIPE"
+	    echo -E "$RECIPE"
 	    ;;
 
 	edit) #[TARGET], Places the recipe for TARGET on the command line so it can be modified and re-added to the Makefile if needed. If TARGET is omitted, open EDITOR on the Makefile.

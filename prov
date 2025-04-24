@@ -105,7 +105,7 @@ function prov() {
 	    else
 		local TARGET="${$(prov__path "$1"):gs_/_\\/_}"
 		shift
-		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1#${*}/" "$MAKEFILE"
+		sed -Ei -- "/^$TARGET:/ s/([^#]*)#?.*/\1 #${*}/" "$MAKEFILE"
 	    fi
 	    ;;
 
